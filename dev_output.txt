@@ -289,3 +289,6 @@ Require stack:
 <w>  at file E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
 <w>  at resolve commonjs E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
  ✓ Compiled in 123ms (459 modules)
+[?25h
+
+E:\codex\足球>

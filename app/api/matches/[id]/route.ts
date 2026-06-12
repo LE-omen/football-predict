@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const matchId = params.id;
+    const { id: matchId } = await params;
     const admin = createAdminClient();
     const { data: match, error: matchErr } = await admin.from('matches').select('*').eq('id', matchId).single();
     if (matchErr || !match) return NextResponse.json({ error: 'match not found' }, { status: 404 });
