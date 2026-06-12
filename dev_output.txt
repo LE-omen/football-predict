@@ -1,0 +1,291 @@
+  ▲ Next.js 14.2.29
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1726ms
+ ✓ Compiled /api/auth/login in 441ms (109 modules)
+ POST /api/auth/login 200 in 2462ms
+ ✓ Compiled /api/matches in 47ms (111 modules)
+ GET /api/matches 200 in 690ms
+ ○ Compiling /matches ...
+ ✓ Compiled /matches in 1961ms (607 modules)
+ GET /matches 200 in 2040ms
+ ✓ Compiled /api/auth/me in 59ms (334 modules)
+ GET /api/auth/me 200 in 122ms
+ GET /api/auth/me 200 in 4ms
+ GET /api/matches 200 in 2263ms
+ GET /api/matches 200 in 353ms
+ ✓ Compiled /matches/[id] in 181ms (618 modules)
+ ✓ Compiled /api/matches/[id] in 59ms (346 modules)
+ GET /api/matches/14081cf5-b378-4f9f-a997-429838362451 200 in 1811ms
+ GET /api/matches/14081cf5-b378-4f9f-a997-429838362451 200 in 8ms
+ GET /api/matches 200 in 335ms
+ GET /api/matches 200 in 327ms
+ GET /api/matches/12b5d62a-5ab4-4baa-b2fd-6666d675b775 200 in 1311ms
+ GET /api/matches/12b5d62a-5ab4-4baa-b2fd-6666d675b775 200 in 8ms
+ ✓ Compiled /api/matches/[id] in 307ms (528 modules)
+ ✓ Compiled in 0ms (329 modules)
+ GET /api/matches/12b5d62a-5ab4-4baa-b2fd-6666d675b775 200 in 343ms
+ GET /api/matches/12b5d62a-5ab4-4baa-b2fd-6666d675b775 200 in 8ms
+ ✓ Compiled in 226ms (600 modules)
+ ✓ Compiled in 137ms (586 modules)
+ ✓ Compiled in 389ms (528 modules)
+ ⨯ Error: Cannot find module './276.js'
+Require stack:
+- E:\codex\足球\.next\server\webpack-runtime.js
+- E:\codex\足球\.next\server\app\matches\[id]\page.js
+- E:\codex\足球\node_modules\next\dist\server\require.js
+- E:\codex\足球\node_modules\next\dist\server\load-components.js
+- E:\codex\足球\node_modules\next\dist\build\utils.js
+- E:\codex\足球\node_modules\next\dist\server\dev\hot-middleware.js
+- E:\codex\足球\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- E:\codex\足球\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- E:\codex\足球\node_modules\next\dist\server\lib\router-server.js
+- E:\codex\足球\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1476:15)
+    at E:\codex\足球\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1576:12)
+    at mod.require (E:\codex\足球\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (E:\codex\足球\.next\server\webpack-runtime.js:198:28)
+    at E:\codex\足球\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (E:\codex\足球\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (E:\codex\足球\.next\server\webpack-runtime.js:162:22)
+    at E:\codex\足球\.next\server\app\matches\[id]\page.js:1:11894
+    at Object.<anonymous> (E:\codex\足球\.next\server\app\matches\[id]\page.js:1:11938)
+    at Module._compile (node:internal/modules/cjs/loader:1830:14)
+    at Object..js (node:internal/modules/cjs/loader:1961:10)
+    at Module.load (node:internal/modules/cjs/loader:1553:32)
+    at Module._load (node:internal/modules/cjs/loader:1355:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1576:12)
+    at mod.require (E:\codex\足球\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (E:\codex\足球\node_modules\next\dist\server\require.js:109:84)
+    at E:\codex\足球\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (E:\codex\足球\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (E:\codex\足球\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (E:\codex\足球\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (E:\codex\足球\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (E:\codex\足球\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (E:\codex\足球\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (E:\codex\足球\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (E:\codex\足球\node_modules\next\dist\server\base-server.js:818:17)
+    at async E:\codex\足球\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (E:\codex\足球\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (E:\codex\足球\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (E:\codex\足球\node_modules\next\dist\server\lib\router-server.js:178:21)
+    at async handleRequest (E:\codex\足球\node_modules\next\dist\server\lib\router-server.js:355:24)
+    at async requestHandlerImpl (E:\codex\足球\node_modules\next\dist\server\lib\router-server.js:379:13)
+    at async Server.requestListener (E:\codex\足球\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\codex\\足球\\.next\\server\\webpack-runtime.js',
+    'E:\\codex\\足球\\.next\\server\\app\\matches\\[id]\\page.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\require.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\load-components.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\build\\utils.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/matches/12b5d62a-5ab4-4baa-b2fd-6666d675b775'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 868ms (741 modules)
+ GET /matches/12b5d62a-5ab4-4baa-b2fd-6666d675b775 200 in 69ms
+ ⨯ Failed to generate static paths for /matches/[id]:
+Error: Cannot find module './vendor-chunks/tailwind-merge.js'
+Require stack:
+- E:\codex\足球\.next\server\webpack-runtime.js
+- E:\codex\足球\.next\server\app\matches\[id]\page.js
+- E:\codex\足球\node_modules\next\dist\server\require.js
+- E:\codex\足球\node_modules\next\dist\server\load-components.js
+- E:\codex\足球\node_modules\next\dist\build\utils.js
+- E:\codex\足球\node_modules\next\dist\server\dev\static-paths-worker.js
+- E:\codex\足球\node_modules\next\dist\compiled\jest-worker\processChild.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1476:15)
+    at E:\codex\足球\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1576:12)
+    at mod.require (E:\codex\足球\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16) {
+  type: 'Error',
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\codex\\足球\\.next\\server\\webpack-runtime.js',
+    'E:\\codex\\足球\\.next\\server\\app\\matches\\[id]\\page.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\require.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\load-components.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\build\\utils.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\dev\\static-paths-worker.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\compiled\\jest-worker\\processChild.js'
+  ]
+}
+ ⨯ Failed to generate static paths for /matches/[id]:
+Error: Cannot find module './vendor-chunks/tailwind-merge.js'
+Require stack:
+- E:\codex\足球\.next\server\webpack-runtime.js
+- E:\codex\足球\.next\server\app\matches\[id]\page.js
+- E:\codex\足球\node_modules\next\dist\server\require.js
+- E:\codex\足球\node_modules\next\dist\server\load-components.js
+- E:\codex\足球\node_modules\next\dist\build\utils.js
+- E:\codex\足球\node_modules\next\dist\server\dev\static-paths-worker.js
+- E:\codex\足球\node_modules\next\dist\compiled\jest-worker\processChild.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1476:15)
+    at E:\codex\足球\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1576:12)
+    at mod.require (E:\codex\足球\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16) {
+  type: 'Error',
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\codex\\足球\\.next\\server\\webpack-runtime.js',
+    'E:\\codex\\足球\\.next\\server\\app\\matches\\[id]\\page.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\require.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\load-components.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\build\\utils.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\dev\\static-paths-worker.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\compiled\\jest-worker\\processChild.js'
+  ]
+}
+ ⨯ Failed to generate static paths for /matches/[id]:
+Error: Cannot find module './vendor-chunks/tailwind-merge.js'
+Require stack:
+- E:\codex\足球\.next\server\webpack-runtime.js
+- E:\codex\足球\.next\server\app\matches\[id]\page.js
+- E:\codex\足球\node_modules\next\dist\server\require.js
+- E:\codex\足球\node_modules\next\dist\server\load-components.js
+- E:\codex\足球\node_modules\next\dist\build\utils.js
+- E:\codex\足球\node_modules\next\dist\server\dev\static-paths-worker.js
+- E:\codex\足球\node_modules\next\dist\compiled\jest-worker\processChild.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1476:15)
+    at E:\codex\足球\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1576:12)
+    at mod.require (E:\codex\足球\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16) {
+  type: 'Error',
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\codex\\足球\\.next\\server\\webpack-runtime.js',
+    'E:\\codex\\足球\\.next\\server\\app\\matches\\[id]\\page.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\require.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\load-components.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\build\\utils.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\dev\\static-paths-worker.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\compiled\\jest-worker\\processChild.js'
+  ]
+}
+ ⨯ Failed to generate static paths for /matches/[id]:
+Error: Cannot find module './vendor-chunks/tailwind-merge.js'
+Require stack:
+- E:\codex\足球\.next\server\webpack-runtime.js
+- E:\codex\足球\.next\server\app\matches\[id]\page.js
+- E:\codex\足球\node_modules\next\dist\server\require.js
+- E:\codex\足球\node_modules\next\dist\server\load-components.js
+- E:\codex\足球\node_modules\next\dist\build\utils.js
+- E:\codex\足球\node_modules\next\dist\server\dev\static-paths-worker.js
+- E:\codex\足球\node_modules\next\dist\compiled\jest-worker\processChild.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1476:15)
+    at E:\codex\足球\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1576:12)
+    at mod.require (E:\codex\足球\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16) {
+  type: 'Error',
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\codex\\足球\\.next\\server\\webpack-runtime.js',
+    'E:\\codex\\足球\\.next\\server\\app\\matches\\[id]\\page.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\require.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\load-components.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\build\\utils.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\server\\dev\\static-paths-worker.js',
+    'E:\\codex\\足球\\node_modules\\next\\dist\\compiled\\jest-worker\\processChild.js'
+  ]
+}
+ ✓ Compiled /_not-found in 89ms (744 modules)
+ GET /_next/static/chunks/main-app.js?v=1781259593196 404 in 141ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 141ms
+ GET /_next/static/chunks/app/matches/%5Bid%5D/page.js 404 in 138ms
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat 'E:\codex\足球\.next\server\vendor-chunks'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/@swc' in E:\codex\足球\.next\server for build dependencies doesn't lead to expected result 'E:\codex\足球\.next\server\vendor-chunks\@swc.js', but to 'Error: Can't resolve './vendor-chunks/@swc' in 'E:\codex\足球\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/@swc (expected E:\codex\足球\.next\server\vendor-chunks\@swc.js)
+<w>  at file dependencies E:\codex\足球\.next\server\webpack-runtime.js
+<w>  at file E:\codex\足球\.next\server\webpack-runtime.js
+<w>  at file dependencies E:\codex\足球\.next\server\app\api\matches\route.js
+<w>  at file E:\codex\足球\.next\server\app\api\matches\route.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\server\require.js
+<w>  at file E:\codex\足球\node_modules\next\dist\server\require.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\server\load-components.js
+<w>  at file E:\codex\足球\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\build\utils.js
+<w>  at file E:\codex\足球\node_modules\next\dist\build\utils.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/next' in E:\codex\足球\.next\server for build dependencies doesn't lead to expected result 'E:\codex\足球\.next\server\vendor-chunks\next.js', but to 'Error: Can't resolve './vendor-chunks/next' in 'E:\codex\足球\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/next (expected E:\codex\足球\.next\server\vendor-chunks\next.js)
+<w>  at file dependencies E:\codex\足球\.next\server\webpack-runtime.js
+<w>  at file E:\codex\足球\.next\server\webpack-runtime.js
+<w>  at file dependencies E:\codex\足球\.next\server\app\api\matches\route.js
+<w>  at file E:\codex\足球\.next\server\app\api\matches\route.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\server\require.js
+<w>  at file E:\codex\足球\node_modules\next\dist\server\require.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\server\load-components.js
+<w>  at file E:\codex\足球\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\build\utils.js
+<w>  at file E:\codex\足球\node_modules\next\dist\build\utils.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+ ✓ Compiled in 124ms (456 modules)
+ ✓ Compiled / in 203ms (798 modules)
+ GET / 307 in 359ms
+ ✓ Compiled /login in 105ms (804 modules)
+ GET /login 200 in 183ms
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat 'E:\codex\足球\.next\server\vendor-chunks\@swc.js'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/@swc' in E:\codex\足球\.next\server for build dependencies doesn't lead to expected result 'E:\codex\足球\.next\server\vendor-chunks\@swc.js', but to 'Error: Can't resolve './vendor-chunks/@swc' in 'E:\codex\足球\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/@swc (expected E:\codex\足球\.next\server\vendor-chunks\@swc.js)
+<w>  at file dependencies E:\codex\足球\.next\server\webpack-runtime.js
+<w>  at file E:\codex\足球\.next\server\webpack-runtime.js
+<w>  at file dependencies E:\codex\足球\.next\server\app\api\matches\route.js
+<w>  at file E:\codex\足球\.next\server\app\api\matches\route.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\server\require.js
+<w>  at file E:\codex\足球\node_modules\next\dist\server\require.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\server\load-components.js
+<w>  at file E:\codex\足球\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\build\utils.js
+<w>  at file E:\codex\足球\node_modules\next\dist\build\utils.js
+<w>  at file dependencies E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs E:\codex\足球\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+ ✓ Compiled in 123ms (459 modules)

@@ -1,0 +1,43 @@
+name: Update Matches and Settle
+
+on:
+  schedule:
+    # Every 3 hours during World Cup period (UTC)
+    # Beijing: 01:07, 04:07, 07:07, 10:07, 13:07, 16:07, 19:07, 22:07
+    - cron: '7 17,20,23,2,5,8,11,14 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-matches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Call update endpoint on deployed site
+        run: |
+          SITE_URL="${{ secrets.NEXT_PUBLIC_SITE_URL }}"
+          SECRET="${{ secrets.ADMIN_JOB_SECRET }}"
+          
+          if [ -z "$SITE_URL" ]; then
+            echo "NEXT_PUBLIC_SITE_URL not set"
+            exit 1
+          fi
+          if [ -z "$SECRET" ]; then
+            echo "ADMIN_JOB_SECRET not set"
+            exit 1
+          fi
+          
+          echo "Calling $SITE_URL/api/cron/update-matches ..."
+          RESPONSE=$(curl -sS -X POST \
+            -H "Authorization: Bearer $SECRET" \
+            -H "Content-Type: application/json" \
+            "${SITE_URL}/api/cron/update-matches")
+          
+          echo "Response: $RESPONSE"
+          
+          # Check if response contains ok:true
+          if echo "$RESPONSE" | grep -q '"ok":true'; then
+            echo "Update completed successfully"
+          else
+            echo "Update may have errors, check response above"
+          fi
