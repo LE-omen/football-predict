@@ -15,14 +15,6 @@ const MARKET_DEFAULTS: { t: MarketType; title: string; opts: string[] }[] = [
 
 type TeamEntry = [number, string, string];
 
-function buildTeamMap(teams: Record<string, TeamEntry>): Map<string, string> {
-  const byId = new Map<string, string>();
-  for (const entry of Object.values(teams)) {
-    byId.set(String(entry[0]), entry[1]);
-  }
-  return byId;
-}
-
 function parseScore(val: string | null | undefined): number | null {
   if (val === '' || val == null) return null;
   const n = Number(val);
@@ -44,33 +36,40 @@ export async function POST() {
     const resp = await fetchWorldCupFixtures(2026);
     const { teams, matches, kinds } = resp.data;
     const roundMap = new Map(kinds.map(k => [k[0], k[1]]));
-    const teamMap = buildTeamMap(teams);
+    const teamMap: Map<string, string> = new Map();
+    for (const entry of Object.values(teams) as TeamEntry[]) {
+      teamMap.set(String(entry[0]), entry[1]);
+    }
 
-    let created = 0;
-    let updated = 0;
-    let skipped = 0;
+    let created = 0, updated = 0, skipped = 0;
+    const seen = new Set<string>();
 
     for (const [roundKey, roundMatches] of Object.entries(matches)) {
       const roundIdMatch = roundKey.match(/G(\d+)/);
       const roundId = roundIdMatch ? Number(roundIdMatch[1]) : 0;
-      const roundName = roundMap.get(roundId) ?? roundKey;
+      const roundName = roundMap.get(roundId) ?? '小组赛';
 
       for (const m of roundMatches) {
+        const lazqMatchId = String(m.id);
+        // Deduplicate: same match can appear in multiple rounds
+        if (seen.has(lazqMatchId)) continue;
+        seen.add(lazqMatchId);
+
         try {
           const homeName = teamMap.get(String(m.h)) ?? `Team#${m.h}`;
           const awayName = teamMap.get(String(m.a)) ?? `Team#${m.a}`;
           const startTime = new Date(m.t * 1000).toISOString();
-          const lazqMatchId = String(m.id);
           const ftHome = parseScore(m.sc[0]);
           const ftAway = parseScore(m.sc[1]);
           const htHome = parseScore(m.sc[2]);
           const htAway = parseScore(m.sc[3]);
 
+          // Try external_provider+external_id first, fallback to api_football_fixture_id
           const { data: existing } = await admin
             .from('matches')
             .select('id, status')
-            .eq('api_football_fixture_id', lazqMatchId)
-            .single();
+            .or(`external_id.eq.${lazqMatchId},api_football_fixture_id.eq.${lazqMatchId}`)
+            .maybeSingle();
 
           if (existing) {
             const updateData: Record<string, unknown> = {
@@ -93,8 +92,7 @@ export async function POST() {
                 home_team: homeName, away_team: awayName, start_time: startTime,
                 status: 'scheduled', league: '世界杯', stage: roundName,
                 raw_status: rawStatus(m.s),
-                api_football_fixture_id: lazqMatchId,
-                api_football_league_id: 1, api_football_season: 2026,
+                external_provider: 'lazq', external_id: lazqMatchId,
                 ft_home_goals: m.s === -1 ? ftHome : null,
                 ft_away_goals: m.s === -1 ? ftAway : null,
                 ht_home_goals: m.s === -1 ? htHome : null,
@@ -118,13 +116,12 @@ export async function POST() {
       }
     }
 
-    const total = Object.values(matches).flat().length;
     await admin.from('api_sync_logs').insert({
       sync_type: 'fixtures_lazq', status: 'ok',
-      detail: { created, updated, skipped, total },
+      detail: { created, updated, skipped },
     });
 
-    return NextResponse.json({ ok: true, created, updated, skipped, total });
+    return NextResponse.json({ ok: true, created, updated, skipped });
   } catch (e: any) {
     await admin.from('api_sync_logs').insert({ sync_type: 'fixtures_lazq', status: 'error', detail: { error: e?.message } });
     return NextResponse.json({ error: e?.message ?? 'sync failed' }, { status: 500 });
