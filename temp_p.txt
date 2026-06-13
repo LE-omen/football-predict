@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -17,15 +17,6 @@ const SHORT_LABELS: Record<MarketType, string> = {
   btts: '双方进球',
   'ht_1x2': '半场胜平负',
 };
-
-// 完整比分网格：7列5行，按用户要求排列
-const SCORE_GRID: (string | null)[][] = [
-  ['1-0', '2-0', '2-1', '3-0', '3-1', '3-2', '4-0'],
-  ['4-1', '4-2', '5-0', '5-1', '5-2', 'other_home', '0-0'],
-  ['1-1', '2-2', '3-3', 'other_draw', '0-1', '0-2', '1-2'],
-  ['0-3', '1-3', '2-3', '0-4', '1-4', '2-4', '0-5'],
-  ['1-5', '2-5', 'other_away', null, null, null, null],
-];
 
 function prettyOpt(type: MarketType, v: string): string {
   if (type === 'exact_score') return v === 'other' ? '其他' : v;
@@ -85,7 +76,12 @@ function ScoreGrid({
   locked: boolean;
 }) {
   const option_odds = market.option_odds ?? {};
-
+  
+  // 3 columns: Home wins | Draw | Away wins, 6 rows each
+  const gridHome = ['1-0','2-0','3-0','4-0','5-0','other_home'];
+  const gridDraw = ['1-1','2-1','3-1','4-1','5-1','other_draw'];
+  const gridAway = ['0-1','0-2','0-3','0-4','0-5','other_away'];
+  
   const getOdds = (key: string) => {
     const val = option_odds[key];
     if (val) {
@@ -94,11 +90,11 @@ function ScoreGrid({
     }
     return '-';
   };
-
+  
   const labelMap: Record<string, string> = {
-    'other_home': '胜其他',
-    'other_draw': '平其他',
-    'other_away': '负其他',
+    'other_home': '其他主胜',
+    'other_draw': '其他平局',
+    'other_away': '其他客胜',
   };
 
   return (
@@ -108,46 +104,35 @@ function ScoreGrid({
         <span className="text-[10px] text-gray-400">参考指数</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-center text-xs border-collapse">
+        <table className="w-full text-center text-xs">
           <thead>
-            <tr>
-              <th className="py-1 px-0.5 text-gray-400 text-[10px] font-medium" colSpan={7}>全场比分</th>
+            <tr className="text-gray-400 text-[10px]">
+              <th className="py-1 px-1">主胜</th>
+              <th className="py-1 px-1">平局</th>
+              <th className="py-1 px-1">客胜</th>
             </tr>
           </thead>
           <tbody>
-            {SCORE_GRID.map((row, rowIdx) => (
-              <tr key={rowIdx}>
-                {row.map((cell, colIdx) => {
-                  if (cell === null) {
-                    return <td key={colIdx} className="py-1 px-0.5" />;
-                  }
-                  const active = selectedOption === cell;
-                  const isOther = cell.startsWith('other_');
-                  // 主胜(红) 平局(灰) 客胜(蓝) 颜色区分
-                  let bgClass = 'bg-gray-50 text-gray-700 hover:bg-gray-100';
-                  let oddsColor = 'text-red-500';
-                  if (isOther || (!isOther && cell.split('-')[0] > cell.split('-')[1])) {
-                    bgClass = active ? 'bg-red-500 text-white' : 'bg-red-50 text-gray-700 hover:bg-red-100';
-                    oddsColor = active ? 'text-white/80' : 'text-red-500';
-                  } else if (!isOther && cell.split('-')[0] === cell.split('-')[1]) {
-                    bgClass = active ? 'bg-gray-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200';
-                    oddsColor = active ? 'text-white/80' : 'text-gray-500';
-                  } else {
-                    bgClass = active ? 'bg-blue-500 text-white' : 'bg-blue-50 text-gray-700 hover:bg-blue-100';
-                    oddsColor = active ? 'text-white/80' : 'text-blue-500';
-                  }
-
+            {Array.from({ length: 6 }).map((_, row) => (
+              <tr key={row} className="border-t border-gray-50">
+                {[gridHome, gridDraw, gridAway].map((col, colIdx) => {
+                  const key = col[row];
+                  const active = selectedOption === key;
                   return (
                     <td key={colIdx} className="py-1 px-0.5">
                       <button
                         type="button"
                         disabled={locked}
-                        onClick={() => onSelect(cell)}
-                        className={`w-full rounded-lg px-0.5 py-1.5 text-center transition-all ${bgClass} disabled:cursor-not-allowed disabled:opacity-30`}
+                        onClick={() => onSelect(key)}
+                        className={`w-full rounded-lg px-1 py-1.5 text-center transition-all ${
+                          active
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        } disabled:cursor-not-allowed disabled:opacity-30`}
                       >
-                        <div className="font-bold text-[11px] leading-tight">{labelMap[cell] ?? cell}</div>
-                        <div className={`text-[10px] mt-0.5 ${oddsColor}`}>
-                          {getOdds(cell)}
+                        <div className="font-bold text-[11px]">{labelMap[key] ?? key}</div>
+                        <div className={`text-[10px] mt-0.5 ${active ? 'text-white/80' : 'text-red-500'}`}>
+                          {getOdds(key)}
                         </div>
                       </button>
                     </td>
