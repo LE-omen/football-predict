@@ -2,7 +2,6 @@ name: Update Matches and Settle
 
 on:
   schedule:
-    # Every 3 hours during World Cup period (UTC)
     # Beijing: 01:07, 04:07, 07:07, 10:07, 13:07, 16:07, 19:07, 22:07
     - cron: '7 17,20,23,2,5,8,11,14 * * *'
   workflow_dispatch:
@@ -23,24 +22,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --omit=dev
+        run: npm ci
 
       - name: Sync matches via lazq API
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node -e "
-          process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-          process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-          const { runUpdateMatchesAndSettle } = require('./lib/jobs/updateMatchesAndSettle');
-          runUpdateMatchesAndSettle().then(r => {
-            console.log(JSON.stringify(r, null, 2));
-            if (!r.ok) {
-              console.error('Job completed with errors');
-              process.exit(1);
-            }
-          }).catch(e => {
-            console.error('Fatal error:', e);
-            process.exit(1);
-          });
-          "
+        run: npx tsx scripts/update-matches.ts
