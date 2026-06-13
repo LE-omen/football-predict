@@ -38,7 +38,7 @@ function parseHafuToHalf1x2(hafu: Record<string, string>): Record<string, string
   // hafu: hh=主/主, hd=主/平, ha=主/客, dh=平/主, dd=平/平, da=平/客, ah=客/主, ad=客/平, aa=客/客
   // 半场胜平负只看第一个字母: h=主胜, d=平, a=客胜
   // 取同组最小赔率
-  // lazq h=home, a=away for hafu
+  // h=home, a=away
   const halfHome = Math.min(parseFloat(hafu.hh || '999'), parseFloat(hafu.ha || '999'), parseFloat(hafu.hd || '999'));
   const halfDraw = Math.min(parseFloat(hafu.dh || '999'), parseFloat(hafu.da || '999'), parseFloat(hafu.dd || '999'));
   const halfAway = Math.min(parseFloat(hafu.ah || '999'), parseFloat(hafu.ad || '999'), parseFloat(hafu.aa || '999'));
