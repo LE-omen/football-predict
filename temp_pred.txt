@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { requireUser } from '../../../lib/auth';
 import { createAdminClient } from '../../../lib/supabase/admin';
 import { isValidStake } from '../../../lib/validators';
-import { LOCK_MINUTES_BEFORE_KICKOFF } from '../../../lib/constants';
+import { LOCK_MINUTES_BEFORE_KICKOFF, MATCH_USER_STAKE_LIMIT } from '../../../lib/constants';
 import { isOptionValidForMarket } from '../../../lib/markets';
 import { adjustPoints } from '../../../lib/points';
 import { minutesBetween } from '../../../lib/utils';
@@ -49,6 +49,12 @@ export async function POST(request: Request) {
     if (!market) return NextResponse.json({ error: 'market not found' }, { status: 404 });
     if (!isOptionValidForMarket(market, selectedOption)) {
       return NextResponse.json({ error: 'invalid option' }, { status: 400 });
+    }
+
+    const { data: existingPreds } = await admin.from('predictions').select('stake_points').eq('user_id', user.id).eq('match_id', resolvedMatchId);
+    const used = (existingPreds ?? []).reduce((s, p) => s + p.stake_points, 0);
+    if (used + stake > MATCH_USER_STAKE_LIMIT) {
+      return NextResponse.json({ error: 'match stake limit 5000' }, { status: 400 });
     }
 
     if (user.points < stake) {
