@@ -1,36 +1,35 @@
 {
-  "name": "football-prediction",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "scrape:lazq": "npx tsx scripts/scrape-lazq.ts",
-    "jobs:update-matches": "npx tsx scripts/update-matches.ts"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.4.0",
-    "dotenv": "^17.4.2",
-    "next": "^15.5.19",
-    "playwright": "^1.60.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "tailwind-merge": "^2.5.0",
-    "tsx": "^4.22.4",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.16",
-    "@types/node": "^20.14.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.13",
-    "typescript": "^5.5.0"
-  }
+    "name":  "football-prediction",
+    "version":  "0.1.0",
+    "private":  true,
+    "scripts":  {
+                    "dev":  "next dev",
+                    "build":  "next build",
+                    "start":  "next start",
+                    "lint":  "next lint",
+                    "scrape:lazq":  "npx tsx scripts/scrape-lazq.ts",
+                    "jobs:update-matches":  "npx tsx scripts/update-matches.ts"
+                },
+    "dependencies":  {
+                         "@supabase/supabase-js":  "^2.45.0",
+                         "clsx":  "^2.1.1",
+                         "date-fns":  "^4.4.0",
+                         "dotenv":  "^17.4.2",
+                         "next":  "^15.5.19",
+                         "playwright":  "^1.60.0",
+                         "react":  "^18.3.1",
+                         "react-dom":  "^18.3.1",
+                         "tailwind-merge":  "^2.5.0",
+                         "tsx":  "^4.22.4",
+                         "zod":  "^4.4.3"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^20.14.0",
+                            "@types/react":  "^18.3.0",
+                            "@types/react-dom":  "^18.3.0",
+                            "autoprefixer":  "^10.4.20",
+                            "postcss":  "^8.4.47",
+                            "tailwindcss":  "^3.4.13",
+                            "typescript":  "^5.5.0"
+                        }
 }
