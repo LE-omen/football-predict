@@ -53,10 +53,17 @@ function defaultMultiplier(optionOdds: Record<string, string>, fallback: number)
   return Math.min(...values);
 }
 
+/** 过滤掉淘汰赛占位符比赛（队名含 [ ] 或"胜者"、"败者"） */
+function isPlaceholderMatch(nm: NormalizedMatch): boolean {
+  const pattern = /[\[\]胜者败者]/;
+  return pattern.test(nm.homeTeam) || pattern.test(nm.awayTeam);
+}
+
 async function fetchNormalizedFromLazqApi(): Promise<NormalizedMatch[]> {
   const resp = await fetchWorldCupFixtures(2026);
-  // Use 'as unknown as' to bridge between typed LazqFixturesResponse and flexible normalize function
-  return normalizeFromApiResponse(resp as unknown as Parameters<typeof normalizeFromApiResponse>[0]);
+  const all = normalizeFromApiResponse(resp as unknown as Parameters<typeof normalizeFromApiResponse>[0]);
+  // 只保留确定了双方球队的比赛
+  return all.filter(m => !isPlaceholderMatch(m));
 }
 
 /* ---------- Settlement logic ---------- */
@@ -142,11 +149,12 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
         const { error: updErr } = await admin.from('matches').update(payload).eq('id', existing.id);
         if (updErr) { result.errors.push(`update ${nm.externalId}: ${updErr.message}`); continue; }
         result.updatedMatchesCount++;
-        // Update existing markets' option_odds
-        const { data: existingMarkets } = await admin.from('markets').select('id, market_type').eq('match_id', existing.id);
+        // Update existing markets' option_odds (backfill empty ones)
+        const { data: existingMarkets } = await admin.from('markets').select('id, market_type, option_odds').eq('match_id', existing.id);
         if (existingMarkets) {
           for (const mkt of existingMarkets) {
             const optOdds = getOptionOddsForMarket(mkt.market_type as MarketType, nm.odds);
+            // Always update option_odds if we have data from lazq
             if (Object.keys(optOdds).length > 0) {
               await admin.from('markets').update({ option_odds: optOdds }).eq('id', mkt.id);
             }
@@ -177,6 +185,20 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
         }
       }
     } catch (e: unknown) { result.errors.push(`match ${nm.externalId}: ${e instanceof Error ? e.message : String(e)}`); }
+  }
+
+  // Delete placeholder matches that shouldn't be shown
+  const { data: allDbMatches } = await admin.from('matches').select('id, home_team, away_team').eq('external_provider', 'lazq');
+  if (allDbMatches) {
+    const placeholderIds = allDbMatches
+      .filter(m => /[\[\]胜者败者]/.test(m.home_team) || /[\[\]胜者败者]/.test(m.away_team))
+      .map(m => m.id);
+    if (placeholderIds.length > 0) {
+      await admin.from('predictions').delete().in('match_id', placeholderIds);
+      await admin.from('markets').delete().in('match_id', placeholderIds);
+      await admin.from('matches').delete().in('id', placeholderIds);
+      console.log(`Deleted ${placeholderIds.length} placeholder matches`);
+    }
   }
 
   try { const lr = await autoLockMarkets(); result.lockedCount = lr.lockedCount; }
