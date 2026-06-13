@@ -17,5 +17,5 @@ export function isValidPassword(password: string) {
 }
 
 export function isValidInviteCode(code: string) {
-  return typeof code === 'string' && code.trim().length >= 4 && code.trim().length <= 64;
+  return typeof code === 'string' && code.trim().length >= 1 && code.trim().length <= 64;
 }
