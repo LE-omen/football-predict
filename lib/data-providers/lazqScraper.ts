@@ -1,11 +1,9 @@
 // lib/data-providers/lazqScraper.ts
 // Playwright-based scraper for lazq.com calculator page.
-// This file is only used locally (not on Vercel).
-// Lazy-load playwright to avoid build errors on Vercel.
+// This file is only used locally (not on Vercel). playwright is not a Vercel dependency.
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const TARGET_URL = 'https://www.lazq.com/home/calculator.html';
-const RAW_DIR = require('path').resolve(process.cwd(), 'data/raw/lazq');
 
 function isMatchObject(obj: unknown): boolean {
   if (!obj || typeof obj !== 'object') return false;
@@ -37,6 +35,7 @@ export async function scrapeLazqCalculator(
 ): Promise<{ responses: unknown[]; rawFilePath: string }> {
   const fs = require('fs');
   const path = require('path');
+  // @ts-ignore - playwright is a local-only dependency, not installed on Vercel
   const { chromium } = await import('playwright');
 
   const captured: unknown[] = [];
@@ -67,6 +66,7 @@ export async function scrapeLazqCalculator(
     await browser.close();
   }
 
+  const RAW_DIR = path.resolve(process.cwd(), 'data/raw/lazq');
   fs.mkdirSync(RAW_DIR, { recursive: true });
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   const rawFilePath = path.join(RAW_DIR, `lazq-${ts}.json`);
