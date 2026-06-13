@@ -2,7 +2,6 @@ name: Update Matches and Settle
 
 on:
   schedule:
-    # Beijing: 01:07, 04:07, 07:07, 10:07, 13:07, 16:07, 19:07, 22:07
     - cron: '7 17,20,23,2,5,8,11,14 * * *'
   workflow_dispatch:
 
@@ -20,6 +19,16 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+
+      - name: Debug: check env
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL is set: $([ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && echo 'YES' || echo 'NO')"
+          echo "SUPABASE_SERVICE_ROLE_KEY is set: $([ -n "$SUPABASE_SERVICE_ROLE_KEY" ] && echo 'YES' || echo 'NO')"
+          echo "SUPABASE_URL length: ${#NEXT_PUBLIC_SUPABASE_URL}"
+          echo "Secrets available: $(env | grep -c SUPABASE)"
 
       - name: Install dependencies
         run: npm ci
