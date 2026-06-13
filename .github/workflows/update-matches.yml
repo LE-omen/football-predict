@@ -20,19 +20,10 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Debug check env
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          echo "URL is set: $([ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && echo 'YES' || echo 'NO')"
-          echo "KEY is set: $([ -n "$SUPABASE_SERVICE_ROLE_KEY" ] && echo 'YES' || echo 'NO')"
-          echo "URL length: ${#NEXT_PUBLIC_SUPABASE_URL}"
-
       - name: Install dependencies
         run: npm ci
 
-      - name: Sync matches via lazq API
+      - name: Sync matches
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
