@@ -12,12 +12,22 @@ export async function POST(request: Request) {
     const user = await requireUser();
     const body = await request.json();
 
-    const matchId = String(body?.matchId ?? '');
-    const marketId = String(body?.marketId ?? '');
-    const selectedOption = String(body?.selectedOption ?? '');
-    const stake = Number(body?.stakePoints ?? 0);
+    const matchId = String(body?.matchId ?? body?.match_id ?? '');
+    const marketId = String(body?.marketId ?? body?.market_id ?? '');
+    const selectedOption = String(body?.selectedOption ?? body?.selected_option ?? '');
+    const stake = Number(body?.stakePoints ?? body?.stake_points ?? 0);
 
-    if (!matchId || !marketId || !selectedOption) {
+    if (!marketId || !selectedOption) {
+      return NextResponse.json({ error: 'missing params' }, { status: 400 });
+    }
+    // Auto-derive matchId from market if not provided
+    let resolvedMatchId = matchId;
+    if (!resolvedMatchId && marketId) {
+      const adminPre = createAdminClient();
+      const { data: mktRow } = await adminPre.from('markets').select('match_id').eq('id', marketId).single();
+      if (mktRow) resolvedMatchId = mktRow.match_id;
+    }
+    if (!resolvedMatchId) {
       return NextResponse.json({ error: 'missing params' }, { status: 400 });
     }
     if (!isValidStake(stake)) {
@@ -26,7 +36,7 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient();
 
-    const { data: match } = await admin.from('matches').select('*').eq('id', matchId).single();
+    const { data: match } = await admin.from('matches').select('*').eq('id', resolvedMatchId).single();
     if (!match) return NextResponse.json({ error: 'match not found' }, { status: 404 });
     if (match.status !== 'scheduled') return NextResponse.json({ error: 'match not open' }, { status: 400 });
 
@@ -35,13 +45,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'locked 30min before kickoff' }, { status: 400 });
     }
 
-    const { data: market } = await admin.from('markets').select('*').eq('id', marketId).eq('match_id', matchId).eq('is_active', true).single();
+    const { data: market } = await admin.from('markets').select('*').eq('id', marketId).eq('match_id', resolvedMatchId).eq('is_active', true).single();
     if (!market) return NextResponse.json({ error: 'market not found' }, { status: 404 });
     if (!isOptionValidForMarket(market, selectedOption)) {
       return NextResponse.json({ error: 'invalid option' }, { status: 400 });
     }
 
-    const { data: existingPreds } = await admin.from('predictions').select('stake_points').eq('user_id', user.id).eq('match_id', matchId);
+    const { data: existingPreds } = await admin.from('predictions').select('stake_points').eq('user_id', user.id).eq('match_id', resolvedMatchId);
     const used = (existingPreds ?? []).reduce((s, p) => s + p.stake_points, 0);
     if (used + stake > MATCH_USER_STAKE_LIMIT) {
       return NextResponse.json({ error: 'match stake limit 5000' }, { status: 400 });
