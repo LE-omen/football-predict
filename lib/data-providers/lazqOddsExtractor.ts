@@ -15,9 +15,9 @@ export interface ExtractedOdds {
 
 function parseCrsKey(key: string): string | null {
   // s1sa, s1sd, s1sh -> "other" variants
-  if (key === 's1sa') return 'other_home';
+  if (key === 's1sa') return 'other_away';
   if (key === 's1sd') return 'other_draw';
-  if (key === 's1sh') return 'other_away';
+  if (key === 's1sh') return 'other_home';
   
   // sXXsYY format: XX = away goals, YY = home goals
   const m = key.match(/^s(\d+)s(\d+)$/);
@@ -38,10 +38,10 @@ function parseHafuToHalf1x2(hafu: Record<string, string>): Record<string, string
   // hafu: hh=主/主, hd=主/平, ha=主/客, dh=平/主, dd=平/平, da=平/客, ah=客/主, ad=客/平, aa=客/客
   // 半场胜平负只看第一个字母: h=主胜, d=平, a=客胜
   // 取同组最小赔率
-  // lazq h=our away, a=our home -> swap
-  const halfAway = Math.min(parseFloat(hafu.hh || '999'), parseFloat(hafu.ha || '999'), parseFloat(hafu.hd || '999'));
+  // lazq h=home, a=away for hafu
+  const halfHome = Math.min(parseFloat(hafu.hh || '999'), parseFloat(hafu.ha || '999'), parseFloat(hafu.hd || '999'));
   const halfDraw = Math.min(parseFloat(hafu.dh || '999'), parseFloat(hafu.da || '999'), parseFloat(hafu.dd || '999'));
-  const halfHome = Math.min(parseFloat(hafu.ah || '999'), parseFloat(hafu.ad || '999'), parseFloat(hafu.aa || '999'));
+  const halfAway = Math.min(parseFloat(hafu.ah || '999'), parseFloat(hafu.ad || '999'), parseFloat(hafu.aa || '999'));
   
   const result: Record<string, string> = {};
   if (halfHome < 999) result.home = halfHome.toFixed(2);
@@ -62,9 +62,9 @@ export function extractOdds(match: Record<string, unknown>): ExtractedOdds {
   // 1. 胜平负 (had) - lazq h=our away, a=our home -> swap
   const had = match.had as Record<string, string> | undefined;
   if (had) {
-    if (had.h) result['1x2'].away = had.h;
+    if (had.h) result['1x2'].home = had.h;
     if (had.d) result['1x2'].draw = had.d;
-    if (had.a) result['1x2'].home = had.a;
+    if (had.a) result['1x2'].away = had.a;
   }
 
   // 2. 准确比分 (crs)
