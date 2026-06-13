@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatDate } from '../lib/utils';
+import { formatDate, getTeamFlag } from '../lib/utils';
 import type { MatchItem } from '../types/match';
 
 function StatusBadge({ status }: { status: MatchItem['status'] }) {
@@ -52,13 +52,13 @@ export default function MatchCard({ match }: { match: MatchItem }) {
       <div className="flex items-center justify-center gap-4">
         <div className="flex-1 text-right">
           <div className="truncate text-lg font-bold text-gray-900 max-w-[120px] ml-auto">
-            {match.home_team}
+            <span className="mr-1.5">{getTeamFlag(match.home_team)}</span>{match.home_team}
           </div>
         </div>
         <ScoreDisplay match={match} />
         <div className="flex-1 text-left">
           <div className="truncate text-lg font-bold text-gray-900 max-w-[120px]">
-            {match.away_team}
+            {match.away_team}<span className="ml-1.5">{getTeamFlag(match.away_team)}</span>
           </div>
         </div>
       </div>

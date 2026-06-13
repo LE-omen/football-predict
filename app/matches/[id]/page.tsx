@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { formatDate } from '../../../lib/utils';
+import { formatDate, getTeamFlag } from '../../../lib/utils';
 import { marketOptionLabel } from '../../../types/market';
 import type { MatchItem } from '../../../types/match';
 import type { MarketItem } from '../../../types/market';
@@ -53,7 +53,7 @@ function MatchHeader({ match }: { match: MatchItem }) {
       </div>
       <div className="flex items-center justify-center gap-6">
         <div className="flex-1 text-right">
-          <div className="text-xl font-black text-gray-900">{match.home_team}</div>
+          <div className="text-xl font-black text-gray-900"><span className="mr-2">{getTeamFlag(match.home_team)}</span>{match.home_team}</div>
         </div>
         <div className="flex flex-col items-center">
           {score ? (
@@ -66,7 +66,7 @@ function MatchHeader({ match }: { match: MatchItem }) {
           )}
         </div>
         <div className="flex-1 text-left">
-          <div className="text-xl font-black text-gray-900">{match.away_team}</div>
+          <div className="text-xl font-black text-gray-900">{match.away_team}<span className="ml-2">{getTeamFlag(match.away_team)}</span></div>
         </div>
       </div>
     </div>
