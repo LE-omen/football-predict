@@ -1,26 +1,40 @@
 // lib/markets.ts
 import type { MarketType } from '../types/database';
 import type { MarketItem } from '../types/market';
-import { marketOptionLabel } from '../types/market';
 
 export function isOptionValidForMarket(market: MarketItem, option: string) {
   return market.options.includes(option);
 }
 
 export function displayOption(marketType: MarketType, option: string) {
-  // For exact_score, just pass through like 2-1
-  return marketOptionLabel[option] ?? option;
+  return option;
 }
 
-export function calcPayout(stake: number, multiplier: number) {
+/**
+ * 计算命中返还: 使用该选项的独立赔率(option_odds)计算，
+ * 如果没有独立赔率则使用默认倍率(multiplier)
+ */
+export function calcPayout(stake: number, multiplier: number): number {
   return Math.round(stake * multiplier);
 }
 
-export function isExactScoreHit(ftHome: number, ftAway: number, selected: string) {
-  if (selected === 'other') {
-    // any score not in predefined set would fall here if admin chooses
-    return false;
+/**
+ * 获取某个选项的有效倍率
+ */
+export function getEffectiveMultiplier(
+  market: { multiplier: number; option_odds?: Record<string, string> | null },
+  selectedOption: string,
+): number {
+  const odds = market.option_odds;
+  if (odds && odds[selectedOption]) {
+    const val = parseFloat(odds[selectedOption]);
+    if (!isNaN(val) && val > 0) return val;
   }
+  return market.multiplier;
+}
+
+export function isExactScoreHit(ftHome: number, ftAway: number, selected: string) {
+  if (selected === 'other') return false;
   const [h, a] = selected.split('-').map(Number);
   return h === ftHome && a === ftAway;
 }
@@ -33,8 +47,9 @@ export function is1x2Hit(ftHome: number, ftAway: number, selected: string) {
 
 export function isTotalGoalsHit(ftHome: number, ftAway: number, selected: string) {
   const total = ftHome + ftAway;
-  if (selected === 'over2.5') return total > 2.5;
-  return total < 2.5;
+  // selected: '0','1','2','3','4','5','6','7+'
+  if (selected === '7+') return total >= 7;
+  return total === parseInt(selected);
 }
 
 export function isBttsHit(ftHome: number, ftAway: number, selected: string) {

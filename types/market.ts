@@ -1,7 +1,17 @@
 // types/market.ts
 import type { MarketRow, MarketType } from './database';
 
-export type MarketItem = Pick<MarketRow, 'id' | 'match_id' | 'market_type' | 'title' | 'options' | 'multiplier' | 'is_active' | 'market_result'>;
+export interface MarketItem {
+  id: string;
+  match_id: string;
+  market_type: MarketType;
+  title: string;
+  options: string[];
+  multiplier: number;
+  is_active: boolean;
+  market_result: string;
+  option_odds?: Record<string, string>;
+}
 
 export const marketTypeLabel: Record<MarketType, string> = {
   '1x2': '胜平负',
@@ -19,6 +29,14 @@ export const marketOptionLabel: Record<string, string> = {
   no: '否',
   'over2.5': '大于 2.5',
   'under2.5': '小于 2.5',
+  '0': '0球',
+  '1': '1球',
+  '2': '2球',
+  '3': '3球',
+  '4': '4球',
+  '5': '5球',
+  '6': '6球',
+  '7+': '7+球',
 };
 
 export function getOptionLabel(value: string): string {

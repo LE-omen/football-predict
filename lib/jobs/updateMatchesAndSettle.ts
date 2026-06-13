@@ -1,8 +1,6 @@
 // lib/jobs/updateMatchesAndSettle.ts
-// Main job: upsert matches from lazq API, auto-lock, auto-settle finished matches.
+// Main job: upsert matches from lazq API with per-option odds, auto-lock, auto-settle.
 
-import * as fs from 'fs';
-import * as path from 'path';
 import { createAdminClient } from '../supabase/admin';
 import { adjustPoints } from '../points';
 import { MULTIPLIER_DEFAULT } from '../constants';
@@ -11,8 +9,9 @@ import {
   is1x2Hit, isExactScoreHit, isTotalGoalsHit, isBttsHit, isHt1x2Hit, calcPayout,
 } from '../markets';
 import { autoLockMarkets } from './lock';
-import type { NormalizedMatch } from '../data-providers/lazqNormalize';
+import { normalizeFromApiResponse, persistNormalized, loadNormalizedFromFile, type NormalizedMatch } from '../data-providers/lazqNormalize';
 import type { MarketType } from '../../types/database';
+import type { ExtractedOdds } from '../data-providers/lazqOddsExtractor';
 
 export interface JobResult {
   ok: boolean;
@@ -32,73 +31,32 @@ const MARKET_DEFS: { market_type: MarketType; title: string; options: string[] }
     market_type: 'exact_score', title: '准确比分',
     options: ['0-0','1-0','0-1','1-1','2-0','0-2','2-1','1-2','2-2','3-0','0-3','3-1','1-3','3-2','2-3','other'],
   },
-  { market_type: 'total_goals', title: '总进球', options: ['over2.5', 'under2.5'] },
+  { market_type: 'total_goals', title: '总进球', options: ['0','1','2','3','4','5','6','7+'] },
   { market_type: 'btts', title: '双方是否进球', options: ['yes', 'no'] },
   { market_type: 'ht_1x2', title: '半场胜平负', options: ['home', 'draw', 'away'] },
 ];
 
-type TeamEntry = [number, string, string];
-
-function parseScore(val: string | null | undefined): number | null {
-  if (val === '' || val == null) return null;
-  const n = Number(val);
-  return Number.isFinite(n) ? n : null;
+function getOptionOddsForMarket(marketType: MarketType, odds: ExtractedOdds): Record<string, string> {
+  switch (marketType) {
+    case '1x2': return odds['1x2'];
+    case 'exact_score': return odds.exact_score;
+    case 'total_goals': return odds.total_goals;
+    case 'btts': return odds.btts;
+    case 'ht_1x2': return odds['ht_1x2'];
+    default: return {};
+  }
 }
 
-/** Fetch from lazq API and deduplicate by externalId */
+function defaultMultiplier(optionOdds: Record<string, string>, fallback: number): number {
+  const values = Object.values(optionOdds).map(Number).filter(v => !isNaN(v) && v > 0);
+  if (values.length === 0) return fallback;
+  return Math.min(...values);
+}
+
 async function fetchNormalizedFromLazqApi(): Promise<NormalizedMatch[]> {
   const resp = await fetchWorldCupFixtures(2026);
-  const { teams, matches, kinds } = resp.data;
-
-  const teamMap = new Map<string, string>();
-  for (const entry of Object.values(teams) as TeamEntry[]) {
-    teamMap.set(String(entry[0]), entry[1]);
-  }
-  const roundMap = new Map(kinds.map(k => [k[0], k[1]]));
-
-  const seen = new Set<string>();
-  const result: NormalizedMatch[] = [];
-
-  for (const [roundKey, roundMatches] of Object.entries(matches)) {
-    const roundIdMatch = roundKey.match(/G(\d+)/);
-    const roundId = roundIdMatch ? Number(roundIdMatch[1]) : 0;
-    const roundName = roundMap.get(roundId) ?? '小组赛';
-
-    for (const m of roundMatches) {
-      const extId = String(m.id);
-      // Skip if already processed (same match can appear in multiple rounds)
-      if (seen.has(extId)) continue;
-      seen.add(extId);
-
-      const homeName = teamMap.get(String(m.h)) ?? `Team#${m.h}`;
-      const awayName = teamMap.get(String(m.a)) ?? `Team#${m.a}`;
-      const startTime = new Date(m.t * 1000).toISOString();
-
-      result.push({
-        externalProvider: 'lazq',
-        externalId: extId,
-        homeTeam: homeName,
-        awayTeam: awayName,
-        startTime,
-        stage: roundName,
-        homeScore: parseScore(m.sc[0]),
-        awayScore: parseScore(m.sc[1]),
-        halfHomeScore: parseScore(m.sc[2]),
-        halfAwayScore: parseScore(m.sc[3]),
-        state: m.s,
-        rawJson: m,
-      });
-    }
-  }
-
-  return result;
-}
-
-function loadNormalizedFromFile(): NormalizedMatch[] | null {
-  const filePath = path.join(process.cwd(), 'data', 'normalized', 'lazq-matches.json');
-  if (!fs.existsSync(filePath)) return null;
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(raw) as NormalizedMatch[];
+  // Use 'as unknown as' to bridge between typed LazqFixturesResponse and flexible normalize function
+  return normalizeFromApiResponse(resp as unknown as Parameters<typeof normalizeFromApiResponse>[0]);
 }
 
 /* ---------- Settlement logic ---------- */
@@ -118,7 +76,7 @@ async function settleMatchById(matchId: string, nm: NormalizedMatch, result: Job
   const admin = createAdminClient();
   const ftH = nm.homeScore!, ftA = nm.awayScore!, htH = nm.halfHomeScore ?? 0, htA = nm.halfAwayScore ?? 0;
 
-  const { data: markets } = await admin.from('markets').select('id, market_type, multiplier, market_result').eq('match_id', matchId);
+  const { data: markets } = await admin.from('markets').select('id, market_type, multiplier, market_result, option_odds').eq('match_id', matchId);
   if (!markets || markets.length === 0) return false;
 
   for (const market of markets) {
@@ -129,10 +87,13 @@ async function settleMatchById(matchId: string, nm: NormalizedMatch, result: Job
       continue;
     }
     let anyWon = false;
+    const optionOdds = (market.option_odds ?? {}) as Record<string, string>;
     for (const pred of predictions) {
       if (pred.status !== 'pending') continue;
       const hit = resolveMarketResult(market.market_type as MarketType, ftH, ftA, htH, htA, pred.selected_option);
-      const payout = hit ? calcPayout(pred.stake_points, market.multiplier) : 0;
+      const optOdds = optionOdds[pred.selected_option];
+      const effectiveMultiplier = optOdds ? parseFloat(optOdds) : market.multiplier;
+      const payout = hit ? calcPayout(pred.stake_points, effectiveMultiplier) : 0;
       const { error: updErr } = await admin.from('predictions').update({ status: hit ? 'won' : 'lost', payout_points: payout }).eq('id', pred.id).eq('status', 'pending');
       if (updErr) { result.errors.push(`update prediction ${pred.id}: ${updErr.message}`); continue; }
       result.predictionsUpdatedCount++;
@@ -161,6 +122,8 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
 
   if (!matches || matches.length === 0) { result.message = 'No match data available'; return result; }
 
+  persistNormalized(matches);
+
   const admin = createAdminClient();
 
   for (const nm of matches) {
@@ -179,6 +142,16 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
         const { error: updErr } = await admin.from('matches').update(payload).eq('id', existing.id);
         if (updErr) { result.errors.push(`update ${nm.externalId}: ${updErr.message}`); continue; }
         result.updatedMatchesCount++;
+        // Update existing markets' option_odds
+        const { data: existingMarkets } = await admin.from('markets').select('id, market_type').eq('match_id', existing.id);
+        if (existingMarkets) {
+          for (const mkt of existingMarkets) {
+            const optOdds = getOptionOddsForMarket(mkt.market_type as MarketType, nm.odds);
+            if (Object.keys(optOdds).length > 0) {
+              await admin.from('markets').update({ option_odds: optOdds }).eq('id', mkt.id);
+            }
+          }
+        }
         if (nm.state === -1 && existing.status !== 'settled' && nm.homeScore != null && nm.awayScore != null) {
           if (await settleMatchById(existing.id, nm, result)) result.settledMatchesCount++;
         }
@@ -190,9 +163,12 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
         if (insErr || !newMatch) { result.errors.push(`insert ${nm.externalId}: ${insErr?.message ?? 'unknown'}`); continue; }
         result.createdMatchesCount++;
         for (const def of MARKET_DEFS) {
+          const optOdds = getOptionOddsForMarket(def.market_type, nm.odds);
+          const mult = defaultMultiplier(optOdds, MULTIPLIER_DEFAULT[def.market_type] ?? 1.8);
           await admin.from('markets').insert({
             match_id: newMatch.id, market_type: def.market_type, title: def.title,
-            options: def.options, multiplier: MULTIPLIER_DEFAULT[def.market_type] ?? 1.8,
+            options: def.options, multiplier: mult,
+            option_odds: optOdds,
             is_active: true, market_result: 'pending',
           });
         }

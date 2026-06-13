@@ -12,14 +12,30 @@ import type { MarketType } from '../../../types/database';
 const MARKET_ORDER: MarketType[] = ['1x2', 'exact_score', 'total_goals', 'btts', 'ht_1x2'];
 
 const SHORT_LABELS: Record<MarketType, string> = {
-  '1x2': '胜平负', exact_score: '比分', total_goals: '进球数', btts: '双方进球', ht_1x2: '半全场',
+  '1x2': '胜平负',
+  exact_score: '比分',
+  total_goals: '进球数',
+  btts: '双方进球',
+  ht_1x2: '半场胜平负',
 };
 
-const QUICK_SCORES = ['1-0','0-1','1-1','2-1','1-2','2-0','0-2','2-2','3-1','1-3','3-0','0-3','0-0','other'];
+const QUICK_SCORES = [
+  '0-0','1-0','0-1','1-1','2-0','0-2','2-1','1-2',
+  '2-2','3-0','0-3','3-1','1-3','3-2','2-3','other',
+];
 
 function prettyOpt(type: MarketType, v: string): string {
   if (type === 'exact_score') return v === 'other' ? '其他' : v;
   return marketOptionLabel[v] ?? v;
+}
+
+// 获取某选项的赔率显示文字
+function getOptionOdds(option_odds: Record<string, string> | undefined, option: string, fallbackMultiplier: number): string {
+  if (option_odds && option_odds[option]) {
+    const val = parseFloat(option_odds[option]);
+    if (!isNaN(val) && val > 0) return val.toFixed(2);
+  }
+  return fallbackMultiplier.toFixed(2);
 }
 
 function MatchHeader({ match }: { match: MatchItem }) {
@@ -55,11 +71,24 @@ function MatchHeader({ match }: { match: MatchItem }) {
   );
 }
 
-function OptionCell({ label, multiplier, active, disabled, onClick }: {
-  label: string; multiplier: number; active: boolean; disabled: boolean; onClick: () => void;
+function OptionCell({
+  label,
+  oddsText,
+  active,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  oddsText: string;
+  active: boolean;
+  disabled: boolean;
+  onClick: () => void;
 }) {
   return (
-    <button type="button" disabled={disabled} onClick={onClick}
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
       className={`flex flex-col items-center justify-center rounded-xl border px-2 py-3 text-center transition-all ${
         active
           ? 'border-red-500 bg-red-50 text-red-700 shadow-sm'
@@ -68,34 +97,52 @@ function OptionCell({ label, multiplier, active, disabled, onClick }: {
     >
       <span className="text-sm font-bold leading-tight">{label}</span>
       <span className={`mt-1 text-[11px] font-semibold ${active ? 'text-red-500' : 'text-red-400'}`}>
-        {multiplier.toFixed(2)}
+        {oddsText}
       </span>
     </button>
   );
 }
 
-function MarketSection({ market, selectedOption, onSelect, locked }: {
-  market: MarketItem; selectedOption: string | null; onSelect: (v: string) => void; locked: boolean;
+function MarketSection({
+  market,
+  selectedOption,
+  onSelect,
+  locked,
+}: {
+  market: MarketItem;
+  selectedOption: string | null;
+  onSelect: (v: string) => void;
+  locked: boolean;
 }) {
   const shortLabel = SHORT_LABELS[market.market_type] ?? market.title;
-  const options = market.market_type === 'exact_score'
-    ? QUICK_SCORES.filter((s) => market.options.includes(s))
-    : market.options;
+  const options =
+    market.market_type === 'exact_score'
+      ? QUICK_SCORES.filter((s) => market.options.includes(s))
+      : market.options;
 
   let gridClass = 'grid-cols-3';
-  if (market.market_type === 'total_goals') gridClass = 'grid-cols-2';
+  if (market.market_type === 'total_goals') gridClass = 'grid-cols-4';
   if (market.market_type === 'exact_score') gridClass = 'grid-cols-4';
+  if (market.market_type === 'btts') gridClass = 'grid-cols-2';
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <div className="mb-3 flex items-center justify-between">
         <span className="text-sm font-bold text-gray-800">{shortLabel}</span>
-        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-500">参考指数</span>
+        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-500">
+          参考指数
+        </span>
       </div>
       <div className={`grid ${gridClass} gap-2`}>
         {options.map((opt) => (
-          <OptionCell key={opt} label={prettyOpt(market.market_type, opt)} multiplier={market.multiplier}
-            active={selectedOption === opt} disabled={locked} onClick={() => onSelect(opt)} />
+          <OptionCell
+            key={opt}
+            label={prettyOpt(market.market_type, opt)}
+            oddsText={getOptionOdds(market.option_odds, opt, market.multiplier)}
+            active={selectedOption === opt}
+            disabled={locked}
+            onClick={() => onSelect(opt)}
+          />
         ))}
       </div>
     </div>
@@ -110,25 +157,32 @@ export default function MatchDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Record<string, string | null>>({});
   const [stakes, setStakes] = useState<Record<string, number>>({});
+  const [showStakePanel, setShowStakePanel] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [msg, setMsg] = useState<Record<string, { type: 'ok' | 'err'; text: string } | null>>({});
-  const [showStakePanel, setShowStakePanel] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/matches/${id}`).then((r) => r.json()).then((d) => {
-      setMatch(d.match ?? null);
-      setMarkets(d.markets ?? []);
-    }).catch(() => {}).finally(() => setLoading(false));
+    fetch(`/api/matches/${id}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setMatch(d.match ?? null);
+        setMarkets(d.markets ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [id]);
 
   const locked = useMemo(() => {
-    if (!match) return true;
+    if (!match) return false;
+    if (match.status === 'locked' || match.status === 'settled') return true;
     if (match.status !== 'scheduled') return true;
     return minutesBetween(new Date(), new Date(match.start_time)) <= LOCK_MINUTES_BEFORE_KICKOFF;
   }, [match]);
 
   const sortedMarkets = useMemo(() => {
-    return [...markets].sort((a, b) => MARKET_ORDER.indexOf(a.market_type) - MARKET_ORDER.indexOf(b.market_type));
+    return [...markets].sort(
+      (a, b) => MARKET_ORDER.indexOf(a.market_type) - MARKET_ORDER.indexOf(b.market_type),
+    );
   }, [markets]);
 
   async function handleSubmit(marketId: string) {
@@ -139,22 +193,39 @@ export default function MatchDetailPage() {
     setMsg((prev) => ({ ...prev, [marketId]: null }));
     try {
       const res = await fetch('/api/predictions', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ matchId: id, marketId, selectedOption, stakePoints: stake }),
       });
       const data = await res.json();
       if (res.ok) {
-        setMsg((prev) => ({ ...prev, [marketId]: { type: 'ok', text: `投入 ${stake} 积分成功！` } }));
+        setMsg((prev) => ({
+          ...prev,
+          [marketId]: { type: 'ok', text: `投入 ${stake} 积分成功！` },
+        }));
+        // Refresh user points
         fetch('/api/auth/me').then((r) => r.json()).catch(() => {});
       } else {
-        setMsg((prev) => ({ ...prev, [marketId]: { type: 'err', text: data.error || '提交失败' } }));
+        setMsg((prev) => ({
+          ...prev,
+          [marketId]: { type: 'err', text: data.error || '提交失败' },
+        }));
       }
-    } catch { setMsg((prev) => ({ ...prev, [marketId]: { type: 'err', text: '网络错误' } })); }
-    finally { setSubmitting(null); }
+    } catch {
+      setMsg((prev) => ({ ...prev, [marketId]: { type: 'err', text: '网络错误' } }));
+    } finally {
+      setSubmitting(null);
+    }
   }
 
-  if (loading) return <div className="mx-auto max-w-2xl px-4 py-10 text-center text-gray-400">加载中...</div>;
-  if (!match) return <div className="mx-auto max-w-2xl px-4 py-10 text-center text-red-500">比赛不存在</div>;
+  if (loading)
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-10 text-center text-gray-400">加载中...</div>
+    );
+  if (!match)
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-10 text-center text-red-500">比赛不存在</div>
+    );
 
   const isSettled = match.status === 'settled';
   const isLocked = match.status === 'locked' || locked;
@@ -162,7 +233,10 @@ export default function MatchDetailPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-20 pt-4">
-      <button onClick={() => router.back()} className="mb-4 flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700">
+      <button
+        onClick={() => router.back()}
+        className="mb-4 flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700"
+      >
         ← 返回赛程
       </button>
 
@@ -187,7 +261,9 @@ export default function MatchDetailPage() {
       <div className="mt-4 space-y-3">
         {sortedMarkets.map((m) => (
           <div key={m.id}>
-            <MarketSection market={m} selectedOption={selected[m.id] ?? null}
+            <MarketSection
+              market={m}
+              selectedOption={selected[m.id] ?? null}
               onSelect={(v) => {
                 setSelected((p) => ({ ...p, [m.id]: v }));
                 if (!stakes[m.id]) setStakes((p) => ({ ...p, [m.id]: 200 }));
@@ -198,29 +274,45 @@ export default function MatchDetailPage() {
             {selected[m.id] && showStakePanel === m.id && canPredict && (
               <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-4">
                 <div className="mb-3 flex items-center justify-between text-sm">
-                  <span className="text-gray-500">投入积分</span>
-                  <span className="text-xl font-black text-red-600">{stakes[m.id] ?? 200}</span>
+                  <span className="text-gray-500">
+                    已选: {prettyOpt(m.market_type, selected[m.id]!)}
+                  </span>
+                  <span className="text-xl font-black text-red-600">
+                    {stakes[m.id] ?? 200} 积分
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex flex-1 flex-wrap gap-1.5">
                     {[100, 200, 500, 1000, 2000, 5000].map((v) => (
-                      <button key={v} type="button"
+                      <button
+                        key={v}
+                        type="button"
                         onClick={() => setStakes((p) => ({ ...p, [m.id]: v }))}
                         className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                           (stakes[m.id] ?? 200) === v
                             ? 'bg-red-600 text-white'
                             : 'border border-gray-200 bg-white text-gray-600 hover:border-red-300'
                         }`}
-                      >{v}</button>
+                      >
+                        {v}
+                      </button>
                     ))}
                   </div>
-                  <button type="button" disabled={submitting === m.id || !selected[m.id]}
+                  <button
+                    type="button"
+                    disabled={submitting === m.id || !selected[m.id]}
                     onClick={() => handleSubmit(m.id)}
                     className="shrink-0 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >{submitting === m.id ? '提交中...' : '确认预测'}</button>
+                  >
+                    {submitting === m.id ? '提交中...' : '确认预测'}
+                  </button>
                 </div>
                 {msg[m.id] && (
-                  <div className={`mt-2 text-xs font-medium ${msg[m.id]!.type === 'ok' ? 'text-green-600' : 'text-red-500'}`}>
+                  <div
+                    className={`mt-2 text-xs font-medium ${
+                      msg[m.id]!.type === 'ok' ? 'text-green-600' : 'text-red-500'
+                    }`}
+                  >
                     {msg[m.id]!.text}
                   </div>
                 )}
