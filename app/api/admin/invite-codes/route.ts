@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const adminUser = await requireAdmin();
     const body = await request.json();
     const code = String(body?.code ?? '').trim();
-    if (!code || code.length < 4) return NextResponse.json({ error: 'code min 4 chars' }, { status: 400 });
+    if (!code || code.length < 1) return NextResponse.json({ error: 'code required' }, { status: 400 });
 
     const admin = createAdminClient();
     const { data: exists } = await admin.from('invite_codes').select('id').eq('code', code).single();
