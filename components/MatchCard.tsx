@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { formatDate, getTeamFlag } from '../lib/utils';
+import { getTeamRank } from '../lib/rankings';
 import type { MatchItem } from '../types/match';
 
 function StatusBadge({ status }: { status: MatchItem['status'] }) {
@@ -34,9 +35,24 @@ function ScoreDisplay({ match }: { match: MatchItem }) {
       </div>
     );
   }
+  return <span className="text-lg font-bold text-gray-300">VS</span>;
+}
+
+function RankBadge({ team }: { team: string }) {
+  const rank = getTeamRank(team);
+  if (!rank) return null;
   return (
-    <span className="text-lg font-bold text-gray-300">VS</span>
+    <span className="text-[10px] font-bold text-red-400">No.{rank}</span>
   );
+}
+
+function formatMatchTime(iso: string) {
+  const d = new Date(iso);
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${month}/${day} ${hours}:${minutes}`;
 }
 
 export default function MatchCard({ match }: { match: MatchItem }) {
@@ -47,18 +63,20 @@ export default function MatchCard({ match }: { match: MatchItem }) {
     >
       <div className="mb-3 flex items-center justify-between text-xs text-gray-400">
         <span className="font-medium text-gray-500">{match.stage ?? '世界杯'}</span>
-        <span>{formatDate(match.start_time)}</span>
+        <span>{formatMatchTime(match.start_time)}</span>
       </div>
       <div className="flex items-center justify-center gap-4">
         <div className="flex-1 text-right">
-          <div className="truncate text-lg font-bold text-gray-900 max-w-[120px] ml-auto">
+          <div className="truncate text-lg font-bold text-gray-900 max-w-[130px] ml-auto">
+            <RankBadge team={match.home_team} />{' '}
             <span className="mr-1.5">{getTeamFlag(match.home_team)}</span>{match.home_team}
           </div>
         </div>
         <ScoreDisplay match={match} />
         <div className="flex-1 text-left">
-          <div className="truncate text-lg font-bold text-gray-900 max-w-[120px]">
-            {match.away_team}<span className="ml-1.5">{getTeamFlag(match.away_team)}</span>
+          <div className="truncate text-lg font-bold text-gray-900 max-w-[130px]">
+            {match.away_team}<span className="ml-1.5">{getTeamFlag(match.away_team)}</span>{' '}
+            <RankBadge team={match.away_team} />
           </div>
         </div>
       </div>

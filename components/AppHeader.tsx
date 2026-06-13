@@ -37,6 +37,9 @@ export default function AppHeader() {
               <Link href="/leaderboard" className="rounded-lg px-3 py-1.5 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900">
                 排行榜
               </Link>
+              <Link href="/rankings" className="rounded-lg px-3 py-1.5 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900">
+                排名
+              </Link>
               <Link href="/my" className="rounded-lg px-3 py-1.5 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900">
                 我的
               </Link>

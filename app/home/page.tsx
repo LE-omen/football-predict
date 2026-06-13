@@ -145,6 +145,24 @@ export default function HomePage() {
         </Link>
       </div>
 
+      {/* FIFS 实力排名入口 */}
+      <Link href='/rankings' className='bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-red-200 transition-all mb-6 block'>
+        <div className='flex items-center justify-between'>
+          <div>
+            <div className='text-base font-bold text-gray-900'>🏆 FIFS 实力排名</div>
+            <div className='mt-1 text-xs text-gray-400'>48 支参赛队实力分档，点击查看完整榜单</div>
+          </div>
+          <div className='text-gray-300 text-lg'>→</div>
+        </div>
+        <div className='mt-3 flex flex-wrap gap-1.5'>
+          {['西班牙','法国','阿根廷','英格兰','葡萄牙','巴西'].map(t => (
+            <span key={t} className='bg-gray-50 text-gray-600 rounded-full px-2.5 py-0.5 text-[11px] font-medium'>
+              No.{[1,2,3,4,5,6][['西班牙','法国','阿根廷','英格兰','葡萄牙','巴西'].indexOf(t)]} {t}
+            </span>
+          ))}
+        </div>
+      </Link>
+
       {/* 玩法说明 */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <h2 className="text-base font-bold text-gray-900 mb-4">📋 玩法说明</h2>

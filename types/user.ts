@@ -6,4 +6,5 @@ export type SafeUser = {
   nickname: string;
   role: UserRole;
   points: number;
+  nickname_changed?: boolean;
 };

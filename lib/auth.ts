@@ -19,7 +19,7 @@ export async function getCurrentUser() {
   const userId = store.get(SESSION_COOKIE)?.value;
   if (!userId) return null;
   const admin = createAdminClient();
-  const { data, error } = await admin.from('users').select('id, nickname, role, points').eq('id', userId).single();
+  const { data, error } = await admin.from('users').select('id, nickname, role, points, nickname_changed').eq('id', userId).single();
   if (error || !data) return null;
   return data;
 }
