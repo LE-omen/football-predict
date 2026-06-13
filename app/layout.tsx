@@ -13,12 +13,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
-      <body className={`${inter.className} min-h-screen bg-gray-950 text-gray-100 antialiased`}>
+      <body className={`${inter.className} min-h-screen bg-white text-gray-900 antialiased`}>
         <AppHeader />
-        <main>{children}</main>
-        <footer className="border-t border-white/10 py-6 text-center text-xs text-white/40">
+        <main className="min-h-[calc(100vh-120px)]">{children}</main>
+        <footer className="border-t border-gray-200 bg-gray-50 py-6 text-center text-xs text-gray-400">
           <div className="mx-auto max-w-3xl px-4">
-            本站为朋友间娱乐性质的足球赛果预测积分站，不提供任何充值、提现、购彩、兑奖、奖品兑换或现金结算服务。站内积分仅为虚拟娱乐积分，不具备现金价值，不可转让、交易或兑换。
+            本站为朋友间娱乐性质的足球赛果预测积分站，不提供任何充值、提现、购彩、兑奖、奖品兑换或现金结算服务。站内积分仅为虚拟娱乐积分，不具备现金价值。
           </div>
         </footer>
       </body>
