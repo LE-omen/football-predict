@@ -32,7 +32,7 @@ const MARKET_DEFS: { market_type: MarketType; title: string; options: string[] }
   { market_type: '1x2', title: '胜平负', options: ['home', 'draw', 'away'] },
   {
     market_type: 'exact_score', title: '准确比分',
-    options: ['0-0','1-0','0-1','1-1','2-0','0-2','2-1','1-2','2-2','3-0','0-3','3-1','1-3','3-2','2-3','other'],
+    options: ['0-0','1-0','0-1','1-1','2-0','0-2','2-1','1-2','2-2','3-0','0-3','3-1','1-3','3-2','2-3','other_home','other_draw','other_away'],
   },
   { market_type: 'total_goals', title: '总进球', options: ['0','1','2','3','4','5','6','7+'] },
   { market_type: 'btts', title: '双方是否进球', options: ['yes', 'no'] },
@@ -223,8 +223,8 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
             if (Object.keys(optOdds).length > 0) {
               const currentOdds = mkt.option_odds ?? {};
               const isEmpty = Object.keys(currentOdds).length === 0;
-              // Always update if empty, or if new data has more keys
-              if (isEmpty || Object.keys(optOdds).length > Object.keys(currentOdds).length) {
+              // Always update when scraper has data (ensures correct home/away mapping)
+              if (Object.keys(optOdds).length > 0) {
                 await admin.from('markets').update({ option_odds: optOdds, multiplier: defaultMultiplier(optOdds, MULTIPLIER_DEFAULT[mkt.market_type as MarketType] ?? 1.8) }).eq('id', mkt.id);
                 result.oddsBackfilledCount++;
               }

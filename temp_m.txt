@@ -1,4 +1,4 @@
-// lib/markets.ts
+﻿// lib/markets.ts
 import type { MarketType } from '../types/database';
 import type { MarketItem } from '../types/market';
 
@@ -34,9 +34,7 @@ export function getEffectiveMultiplier(
 }
 
 export function isExactScoreHit(ftHome: number, ftAway: number, selected: string) {
-  if (selected === 'other_home') return ftHome > ftAway && ftHome >= 4;
-  if (selected === 'other_draw') return ftHome === ftAway && ftHome >= 4;
-  if (selected === 'other_away') return ftAway > ftHome && ftAway >= 4;
+  if (selected === 'other') return false;
   const [h, a] = selected.split('-').map(Number);
   return h === ftHome && a === ftAway;
 }
