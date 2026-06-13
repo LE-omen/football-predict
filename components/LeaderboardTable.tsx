@@ -1,30 +1,59 @@
-'use client';
+﻿'use client';
 
 type Row = { id: string; nickname: string; points: number };
 type Props = { users: Row[] };
 
 export default function LeaderboardTable({ users }: Props) {
-  if (!users.length) return <div className="py-10 text-center text-gray-400">暂无数据</div>;
+  if (!users.length)
+    return (
+      <div className="glass-card-static py-16 text-center text-zinc-400">
+        暂无数据
+      </div>
+    );
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200">
+    <div className="glass-card-static overflow-hidden">
       <table className="min-w-full text-sm">
-        <thead className="bg-red-50 text-left">
-          <tr>
-            <th className="px-4 py-3 font-semibold text-gray-700">排名</th>
-            <th className="px-4 py-3 font-semibold text-gray-700">昵称</th>
-            <th className="px-4 py-3 text-right font-semibold text-gray-700">积分</th>
+        <thead>
+          <tr className="border-b border-black/[0.06]">
+            <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              排名
+            </th>
+            <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              昵称
+            </th>
+            <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              积分
+            </th>
           </tr>
         </thead>
         <tbody>
-          {users.map((u, i) => (
-            <tr key={u.id} className={`border-t border-gray-100 ${i === 0 ? 'bg-red-50/50' : ''}`}>
-              <td className="px-4 py-3">
-                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
-              </td>
-              <td className="px-4 py-3 font-medium text-gray-900">{u.nickname}</td>
-              <td className="px-4 py-3 text-right font-bold text-red-600">{u.points.toLocaleString('zh-CN')}</td>
-            </tr>
-          ))}
+          {users.map((u, i) => {
+            const isTop3 = i < 3;
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null;
+            return (
+              <tr
+                key={u.id}
+                className={`border-t border-black/[0.04] transition hover:bg-accent/[0.02] ${
+                  isTop3 ? 'bg-accent/[0.03]' : ''
+                }`}
+              >
+                <td className="px-5 py-3.5">
+                  {medal ? (
+                    <span className="text-lg">{medal}</span>
+                  ) : (
+                    <span className="font-medium text-zinc-400">{i + 1}</span>
+                  )}
+                </td>
+                <td className={`px-5 py-3.5 font-medium ${isTop3 ? 'text-zinc-900' : 'text-zinc-600'}`}>
+                  {u.nickname}
+                </td>
+                <td className="px-5 py-3.5 text-right font-bold text-accent">
+                  {u.points.toLocaleString('zh-CN')}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

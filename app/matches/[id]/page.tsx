@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { formatDate, minutesBetween } from '../../../lib/utils';
-import { LOCK_MINUTES_BEFORE_KICKOFF } from '../../../lib/constants';
+import { formatDate } from '../../../lib/utils';
 import { marketOptionLabel } from '../../../types/market';
 import type { MatchItem } from '../../../types/match';
 import type { MarketItem } from '../../../types/market';
@@ -16,20 +15,14 @@ const SHORT_LABELS: Record<MarketType, string> = {
   exact_score: '比分',
   total_goals: '进球数',
   btts: '双方进球',
-  ht_1x2: '半场胜平负',
+  'ht_1x2': '半场胜平负',
 };
-
-const QUICK_SCORES = [
-  '0-0','1-0','0-1','1-1','2-0','0-2','2-1','1-2',
-  '2-2','3-0','0-3','3-1','1-3','3-2','2-3','other',
-];
 
 function prettyOpt(type: MarketType, v: string): string {
   if (type === 'exact_score') return v === 'other' ? '其他' : v;
   return marketOptionLabel[v] ?? v;
 }
 
-// 获取某选项的赔率显示文字
 function getOptionOdds(option_odds: Record<string, string> | undefined, option: string, fallbackMultiplier: number): string {
   if (option_odds && option_odds[option]) {
     const val = parseFloat(option_odds[option]);
@@ -44,8 +37,8 @@ function MatchHeader({ match }: { match: MatchItem }) {
   const halfScore = settled && match.ht_home_goals != null ? `(${match.ht_home_goals} : ${match.ht_away_goals})` : null;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-gradient-to-b from-red-50 to-white p-6">
-      <div className="mb-3 flex items-center justify-between text-xs text-gray-400">
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+      <div className="mb-4 flex items-center justify-between text-xs text-gray-400">
         <span className="font-medium text-gray-500">{match.stage ?? '世界杯'}</span>
         <span>{formatDate(match.start_time)}</span>
       </div>
@@ -56,7 +49,7 @@ function MatchHeader({ match }: { match: MatchItem }) {
         <div className="flex flex-col items-center">
           {score ? (
             <>
-              <div className="text-4xl font-black tracking-wider text-red-600">{score}</div>
+              <div className="text-4xl font-black tracking-wider text-red-500">{score}</div>
               {halfScore && <div className="mt-1 text-xs text-gray-400">半场 {halfScore}</div>}
             </>
           ) : (
@@ -71,35 +64,86 @@ function MatchHeader({ match }: { match: MatchItem }) {
   );
 }
 
-function OptionCell({
-  label,
-  oddsText,
-  active,
-  disabled,
-  onClick,
+function ScoreGrid({
+  market,
+  selectedOption,
+  onSelect,
+  locked,
 }: {
-  label: string;
-  oddsText: string;
-  active: boolean;
-  disabled: boolean;
-  onClick: () => void;
+  market: MarketItem;
+  selectedOption: string | null;
+  onSelect: (v: string) => void;
+  locked: boolean;
 }) {
+  const option_odds = market.option_odds ?? {};
+  
+  // 3 columns: Home wins | Draw | Away wins, 6 rows each
+  const gridHome = ['1-0','2-0','3-0','4-0','5-0','other_home'];
+  const gridDraw = ['1-1','2-1','3-1','4-1','5-1','other_draw'];
+  const gridAway = ['0-1','0-2','0-3','0-4','0-5','other_away'];
+  
+  const getOdds = (key: string) => {
+    const val = option_odds[key];
+    if (val) {
+      const num = parseFloat(val);
+      return isNaN(num) ? '-' : num.toFixed(2);
+    }
+    return '-';
+  };
+  
+  const labelMap: Record<string, string> = {
+    'other_home': '其他主胜',
+    'other_draw': '其他平局',
+    'other_away': '其他客胜',
+  };
+
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center rounded-xl border px-2 py-3 text-center transition-all ${
-        active
-          ? 'border-red-500 bg-red-50 text-red-700 shadow-sm'
-          : 'border-gray-200 bg-white text-gray-700 hover:border-red-300 hover:bg-red-50/50'
-      } disabled:cursor-not-allowed disabled:opacity-40`}
-    >
-      <span className="text-sm font-bold leading-tight">{label}</span>
-      <span className={`mt-1 text-[11px] font-semibold ${active ? 'text-red-500' : 'text-red-400'}`}>
-        {oddsText}
-      </span>
-    </button>
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-sm font-bold text-gray-900">比分</span>
+        <span className="text-[10px] text-gray-400">参考指数</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-center text-xs">
+          <thead>
+            <tr className="text-gray-400 text-[10px]">
+              <th className="py-1 px-1">主胜</th>
+              <th className="py-1 px-1">平局</th>
+              <th className="py-1 px-1">客胜</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 6 }).map((_, row) => (
+              <tr key={row} className="border-t border-gray-50">
+                {[gridHome, gridDraw, gridAway].map((col, colIdx) => {
+                  const key = col[row];
+                  const active = selectedOption === key;
+                  return (
+                    <td key={colIdx} className="py-1 px-0.5">
+                      <button
+                        type="button"
+                        disabled={locked}
+                        onClick={() => onSelect(key)}
+                        className={`w-full rounded-lg px-1 py-1.5 text-center transition-all ${
+                          active
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        } disabled:cursor-not-allowed disabled:opacity-30`}
+                      >
+                        <div className="font-bold text-[11px]">{labelMap[key] ?? key}</div>
+                        <div className={`text-[10px] mt-0.5 ${active ? 'text-white/80' : 'text-red-500'}`}>
+                          {getOdds(key)}
+                        </div>
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -115,35 +159,51 @@ function MarketSection({
   locked: boolean;
 }) {
   const shortLabel = SHORT_LABELS[market.market_type] ?? market.title;
-  const options =
-    market.market_type === 'exact_score'
-      ? QUICK_SCORES.filter((s) => market.options.includes(s))
-      : market.options;
+
+  if (market.market_type === 'exact_score') {
+    return (
+      <ScoreGrid
+        market={market}
+        selectedOption={selectedOption}
+        onSelect={onSelect}
+        locked={locked}
+      />
+    );
+  }
 
   let gridClass = 'grid-cols-3';
   if (market.market_type === 'total_goals') gridClass = 'grid-cols-4';
-  if (market.market_type === 'exact_score') gridClass = 'grid-cols-4';
   if (market.market_type === 'btts') gridClass = 'grid-cols-2';
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-sm font-bold text-gray-800">{shortLabel}</span>
-        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-500">
-          参考指数
-        </span>
+        <span className="text-sm font-bold text-gray-900">{shortLabel}</span>
+        <span className="text-[10px] text-gray-400">参考指数</span>
       </div>
       <div className={`grid ${gridClass} gap-2`}>
-        {options.map((opt) => (
-          <OptionCell
-            key={opt}
-            label={prettyOpt(market.market_type, opt)}
-            oddsText={getOptionOdds(market.option_odds, opt, market.multiplier)}
-            active={selectedOption === opt}
-            disabled={locked}
-            onClick={() => onSelect(opt)}
-          />
-        ))}
+        {market.options.map((opt) => {
+          const odds = getOptionOdds(market.option_odds, opt, market.multiplier);
+          const active = selectedOption === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              disabled={locked}
+              onClick={() => onSelect(opt)}
+              className={`flex flex-col items-center justify-center rounded-xl border px-2 py-3 text-center transition-all ${
+                active
+                  ? 'border-red-500 bg-red-50 text-red-600 shadow-sm'
+                  : 'border-gray-100 bg-gray-50 text-gray-600 hover:border-red-200 hover:bg-red-50/50'
+              } disabled:cursor-not-allowed disabled:opacity-30`}
+            >
+              <span className="text-sm font-bold leading-tight">{prettyOpt(market.market_type, opt)}</span>
+              <span className={`mt-1 text-[11px] font-semibold ${active ? 'text-red-500' : 'text-red-400'}`}>
+                {odds}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -157,45 +217,48 @@ export default function MatchDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Record<string, string | null>>({});
   const [stakes, setStakes] = useState<Record<string, number>>({});
-  const [showStakePanel, setShowStakePanel] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [msg, setMsg] = useState<Record<string, { type: 'ok' | 'err'; text: string } | null>>({});
+  const [activeTab, setActiveTab] = useState<MarketType>('1x2');
 
   useEffect(() => {
     fetch(`/api/matches/${id}`)
       .then((r) => r.json())
       .then((d) => {
-        setMatch(d.match ?? null);
+        setMatch(d.match);
         setMarkets(d.markets ?? []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
 
-  const locked = useMemo(() => {
-    if (!match) return false;
-    if (match.status === 'locked' || match.status === 'settled') return true;
-    if (match.status !== 'scheduled') return true;
-    return minutesBetween(new Date(), new Date(match.start_time)) <= LOCK_MINUTES_BEFORE_KICKOFF;
-  }, [match]);
-
   const sortedMarkets = useMemo(() => {
-    return [...markets].sort(
-      (a, b) => MARKET_ORDER.indexOf(a.market_type) - MARKET_ORDER.indexOf(b.market_type),
-    );
+    const map = new Map(markets.map((m) => [m.market_type, m]));
+    return MARKET_ORDER.filter((t) => map.has(t)).map((t) => map.get(t)!);
   }, [markets]);
 
+  const locked = useMemo(() => {
+    if (!match) return false;
+    const kickoff = new Date(match.start_time).getTime();
+    const now = Date.now();
+    return kickoff - now < 30 * 60 * 1000;
+  }, [match]);
+
+  const currentMarket = useMemo(() => {
+    return sortedMarkets.find(m => m.market_type === activeTab);
+  }, [sortedMarkets, activeTab]);
+
   async function handleSubmit(marketId: string) {
-    const selectedOption = selected[marketId];
+    const opt = selected[marketId];
     const stake = stakes[marketId] ?? 200;
-    if (!selectedOption) return;
+    if (!opt) return;
     setSubmitting(marketId);
-    setMsg((prev) => ({ ...prev, [marketId]: null }));
+    setMsg((p) => ({ ...p, [marketId]: null }));
     try {
       const res = await fetch('/api/predictions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: id, marketId, selectedOption, stakePoints: stake }),
+        body: JSON.stringify({ market_id: marketId, selected_option: opt, stake_points: stake }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -203,7 +266,6 @@ export default function MatchDetailPage() {
           ...prev,
           [marketId]: { type: 'ok', text: `投入 ${stake} 积分成功！` },
         }));
-        // Refresh user points
         fetch('/api/auth/me').then((r) => r.json()).catch(() => {});
       } else {
         setMsg((prev) => ({
@@ -220,11 +282,14 @@ export default function MatchDetailPage() {
 
   if (loading)
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10 text-center text-gray-400">加载中...</div>
+      <div className="mx-auto max-w-2xl px-4 py-20 text-center text-gray-400">
+        <div className="mb-3 inline-block h-6 w-6 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+        <div className="text-sm">加载中…</div>
+      </div>
     );
   if (!match)
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10 text-center text-red-500">比赛不存在</div>
+      <div className="mx-auto max-w-2xl px-4 py-20 text-center text-red-500">比赛不存在</div>
     );
 
   const isSettled = match.status === 'settled';
@@ -232,10 +297,10 @@ export default function MatchDetailPage() {
   const canPredict = match.status === 'scheduled' && !isLocked;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-20 pt-4">
+    <div className="mx-auto max-w-2xl px-4 pb-24 pt-6 animate-fade-in">
       <button
         onClick={() => router.back()}
-        className="mb-4 flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700"
+        className="mb-5 flex items-center gap-1.5 text-sm text-gray-400 transition hover:text-gray-900"
       >
         ← 返回赛程
       </button>
@@ -243,84 +308,100 @@ export default function MatchDetailPage() {
       <MatchHeader match={match} />
 
       {isLocked && !isSettled && (
-        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-600 animate-fade-in">
           ⏰ 本场已锁定，不能继续参与预测
         </div>
       )}
       {isSettled && (
-        <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+        <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-500 animate-fade-in">
           ✅ 本场已结算
         </div>
       )}
       {canPredict && (
-        <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div className="mt-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-500 animate-fade-in">
           🎯 选择预测项目和选项，投入积分参与预测
         </div>
       )}
 
-      <div className="mt-4 space-y-3">
+      {/* Tab 切换 */}
+      <div className="mt-5 flex gap-1 bg-gray-100 rounded-xl p-1">
         {sortedMarkets.map((m) => (
-          <div key={m.id}>
-            <MarketSection
-              market={m}
-              selectedOption={selected[m.id] ?? null}
-              onSelect={(v) => {
-                setSelected((p) => ({ ...p, [m.id]: v }));
-                if (!stakes[m.id]) setStakes((p) => ({ ...p, [m.id]: 200 }));
-                setShowStakePanel(m.id);
-              }}
-              locked={isLocked}
-            />
-            {selected[m.id] && showStakePanel === m.id && canPredict && (
-              <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <div className="mb-3 flex items-center justify-between text-sm">
-                  <span className="text-gray-500">
-                    已选: {prettyOpt(m.market_type, selected[m.id]!)}
-                  </span>
-                  <span className="text-xl font-black text-red-600">
-                    {stakes[m.id] ?? 200} 积分
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex flex-1 flex-wrap gap-1.5">
-                    {[100, 200, 500, 1000, 2000, 5000].map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => setStakes((p) => ({ ...p, [m.id]: v }))}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                          (stakes[m.id] ?? 200) === v
-                            ? 'bg-red-600 text-white'
-                            : 'border border-gray-200 bg-white text-gray-600 hover:border-red-300'
-                        }`}
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    disabled={submitting === m.id || !selected[m.id]}
-                    onClick={() => handleSubmit(m.id)}
-                    className="shrink-0 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {submitting === m.id ? '提交中...' : '确认预测'}
-                  </button>
-                </div>
-                {msg[m.id] && (
-                  <div
-                    className={`mt-2 text-xs font-medium ${
-                      msg[m.id]!.type === 'ok' ? 'text-green-600' : 'text-red-500'
-                    }`}
-                  >
-                    {msg[m.id]!.text}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <button
+            key={m.market_type}
+            onClick={() => setActiveTab(m.market_type)}
+            className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+              activeTab === m.market_type
+                ? 'bg-white text-red-500 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {SHORT_LABELS[m.market_type] ?? m.title}
+          </button>
         ))}
       </div>
+
+      {/* 当前选中的市场 */}
+      {currentMarket && (
+        <div className="mt-4">
+          <MarketSection
+            market={currentMarket}
+            selectedOption={selected[currentMarket.id] ?? null}
+            onSelect={(v) => {
+              setSelected((p) => ({ ...p, [currentMarket.id]: v }));
+              if (!stakes[currentMarket.id]) setStakes((p) => ({ ...p, [currentMarket.id]: 200 }));
+            }}
+            locked={isLocked}
+          />
+
+          {selected[currentMarket.id] && canPredict && (
+            <div className="bg-white rounded-2xl border border-gray-100 mt-3 p-4 shadow-sm animate-slide-up">
+              <div className="mb-3 flex items-center justify-between text-sm">
+                <span className="text-gray-400">
+                  已选: <span className="font-medium text-gray-900">{prettyOpt(currentMarket.market_type, selected[currentMarket.id]!)}</span>
+                </span>
+                <span className="text-xl font-black text-red-500">
+                  {stakes[currentMarket.id] ?? 200} 积分
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-1 flex-wrap gap-1.5">
+                  {[100, 200, 500, 1000, 2000, 5000].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setStakes((p) => ({ ...p, [currentMarket.id]: v }))}
+                      className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
+                        (stakes[currentMarket.id] ?? 200) === v
+                          ? 'bg-red-500 text-white shadow-sm'
+                          : 'border border-gray-100 bg-gray-50 text-gray-600 hover:border-red-200 hover:bg-red-50/50'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  disabled={submitting === currentMarket.id || !selected[currentMarket.id]}
+                  onClick={() => handleSubmit(currentMarket.id)}
+                  className="bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl px-6 py-2.5 text-sm shadow-sm hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting === currentMarket.id ? '提交中…' : '确认预测'}
+                </button>
+              </div>
+              {msg[currentMarket.id] && msg[currentMarket.id]!.text && (
+                <div
+                  className={`mt-3 text-xs font-medium animate-fade-in ${
+                    msg[currentMarket.id]!.type === 'ok' ? 'text-green-600' : 'text-red-500'
+                  }`}
+                >
+                  {msg[currentMarket.id]!.text}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

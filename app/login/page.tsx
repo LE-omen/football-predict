@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 
 export default function LoginPage() {
@@ -8,32 +8,64 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault(); setLoading(true); setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
     try {
-      const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname, password }) });
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname, password }),
+      });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || '登录失败'); return; }
+      if (!res.ok) {
+        setError(data.error || '登录失败');
+        return;
+      }
       window.location.href = '/home';
-    } catch { setError('网络异常'); } finally { setLoading(false); }
+    } catch {
+      setError('网络异常');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="mx-auto max-w-sm px-4 py-16">
-      <div className="mb-8 text-center">
-        <div className="text-4xl mb-3">⚽</div>
-        <h1 className="text-2xl font-black text-gray-900">登录</h1>
+    <div className="mx-auto max-w-sm px-4 py-20 animate-fade-in">
+      <div className="mb-10 text-center">
+        <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 text-3xl">
+          ⚽
+        </div>
+        <h1 className="text-3xl font-black tracking-tight text-zinc-900">登录</h1>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="glass-card-static space-y-5 p-6">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">昵称</label>
-          <input className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="请输入昵称" value={nickname} onChange={(e) => setNickname(e.target.value)} />
+          <label className="mb-2 block text-sm font-medium text-zinc-500">昵称</label>
+          <input
+            className="input-field"
+            placeholder="请输入昵称"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+          />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">密码</label>
-          <input type="password" className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="请输入密码" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <label className="mb-2 block text-sm font-medium text-zinc-500">密码</label>
+          <input
+            type="password"
+            className="input-field"
+            placeholder="请输入密码"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-        <button disabled={loading} className="w-full rounded-xl bg-red-600 py-2.5 font-semibold text-white hover:bg-red-700 disabled:opacity-50">{loading ? '登录中...' : '登录'}</button>
+        {error && (
+          <div className="rounded-xl bg-accent/[0.06] px-4 py-3 text-sm font-medium text-accent animate-fade-in">
+            {error}
+          </div>
+        )}
+        <button disabled={loading} className="btn-primary w-full">
+          {loading ? '登录中…' : '登录'}
+        </button>
       </form>
     </div>
   );

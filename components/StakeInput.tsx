@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { STAKE_MIN, STAKE_MAX, STAKE_STEP } from '../lib/constants';
 
@@ -10,7 +10,7 @@ type Props = {
 
 export default function StakeInput({ value, onChange, disabled }: Props) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <input
         type="range"
         min={STAKE_MIN}
@@ -19,7 +19,7 @@ export default function StakeInput({ value, onChange, disabled }: Props) {
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
-        className="w-full"
+        className="flex-1"
       />
       <input
         type="number"
@@ -29,7 +29,7 @@ export default function StakeInput({ value, onChange, disabled }: Props) {
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
-        className="w-24 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-right text-sm"
+        className="input-field w-24 text-right text-sm"
       />
     </div>
   );

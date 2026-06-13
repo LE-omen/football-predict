@@ -1,6 +1,8 @@
 // lib/jobs/updateMatchesAndSettle.ts
 // Main job: upsert matches from lazq API with per-option odds, auto-lock, auto-settle.
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { createAdminClient } from '../supabase/admin';
 import { adjustPoints } from '../points';
 import { MULTIPLIER_DEFAULT } from '../constants';
@@ -10,8 +12,8 @@ import {
 } from '../markets';
 import { autoLockMarkets } from './lock';
 import { normalizeFromApiResponse, persistNormalized, loadNormalizedFromFile, type NormalizedMatch } from '../data-providers/lazqNormalize';
+import { extractOdds, type ExtractedOdds } from '../data-providers/lazqOddsExtractor';
 import type { MarketType } from '../../types/database';
-import type { ExtractedOdds } from '../data-providers/lazqOddsExtractor';
 
 export interface JobResult {
   ok: boolean;
@@ -22,6 +24,7 @@ export interface JobResult {
   lockedCount: number;
   predictionsUpdatedCount: number;
   pointsAwardedCount: number;
+  oddsBackfilledCount: number;
   errors: string[];
 }
 
@@ -53,17 +56,81 @@ function defaultMultiplier(optionOdds: Record<string, string>, fallback: number)
   return Math.min(...values);
 }
 
-/** 过滤掉淘汰赛占位符比赛（队名含 [ ] 或"胜者"、"败者"） */
 function isPlaceholderMatch(nm: NormalizedMatch): boolean {
   const pattern = /[\[\]胜者败者]/;
   return pattern.test(nm.homeTeam) || pattern.test(nm.awayTeam);
 }
 
+/**
+ * Load the latest lazq scraper raw JSON and build a map from team-name-pair -> odds.
+ * The scraper data has full odds (had, crs, ttg, hafu, etc.) while the main API does not.
+ */
+function loadScraperOddsMap(): Map<string, ExtractedOdds> {
+  const rawDir = path.resolve(process.cwd(), 'data/raw/lazq');
+  const map = new Map<string, ExtractedOdds>();
+  if (!fs.existsSync(rawDir)) return map;
+
+  // Find the most recent raw file
+  const files = fs.readdirSync(rawDir).filter(f => f.endsWith('.json')).sort().reverse();
+  if (files.length === 0) return map;
+
+  const rawPath = path.join(rawDir, files[0]);
+  try {
+    const raw = JSON.parse(fs.readFileSync(rawPath, 'utf-8'));
+    // raw is an array of responses; each response has .data which is an array of match objects
+    const responses = Array.isArray(raw) ? raw : [raw];
+    for (const resp of responses) {
+      const items = Array.isArray(resp?.data) ? resp.data : [];
+      for (const item of items) {
+        if (!item || typeof item !== 'object') continue;
+        const obj = item as Record<string, unknown>;
+        const homeName = String(obj.homeTeamName ?? '');
+        const awayName = String(obj.awayTeamName ?? '');
+        if (!homeName || !awayName) continue;
+        const odds = extractOdds(obj);
+        // Build key as "homeTeamName|awayTeamName" for matching
+        const key = `${homeName}|${awayName}`;
+        map.set(key, odds);
+      }
+    }
+    console.log(`Loaded scraper odds for ${map.size} matches from ${files[0]}`);
+  } catch (e) {
+    console.log(`Failed to load scraper odds: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return map;
+}
+
+/** Merge API odds (likely empty) with scraper odds (has full data) */
+function mergeOdds(apiOdds: ExtractedOdds, scraperOdds: ExtractedOdds | undefined): ExtractedOdds {
+  if (!scraperOdds) return apiOdds;
+  const result: ExtractedOdds = { '1x2': {}, exact_score: {}, total_goals: {}, btts: {}, 'ht_1x2': {} };
+  for (const key of ['1x2', 'exact_score', 'total_goals', 'btts', 'ht_1x2'] as const) {
+    // Prefer scraper odds (which have full data), fallback to API odds
+    const src = Object.keys(scraperOdds[key]).length > 0 ? scraperOdds[key] : apiOdds[key];
+    result[key] = { ...src };
+  }
+  return result;
+}
+
 async function fetchNormalizedFromLazqApi(): Promise<NormalizedMatch[]> {
   const resp = await fetchWorldCupFixtures(2026);
-  const all = normalizeFromApiResponse(resp as unknown as Parameters<typeof normalizeFromApiResponse>[0]);
-  // 只保留确定了双方球队的比赛
-  return all.filter(m => !isPlaceholderMatch(m));
+  const apiMatches = normalizeFromApiResponse(resp as unknown as Parameters<typeof normalizeFromApiResponse>[0]);
+  
+  // Load scraper odds to supplement
+  const scraperOddsMap = loadScraperOddsMap();
+
+  // Merge odds from scraper data into API matches
+  const enriched = apiMatches.map(m => {
+    if (isPlaceholderMatch(m)) return m;
+    const scraperOdds = scraperOddsMap.get(`${m.homeTeam}|${m.awayTeam}`);
+    if (scraperOdds) {
+      m.odds = mergeOdds(m.odds, scraperOdds);
+    }
+    return m;
+  });
+
+  // Only keep matches with confirmed teams
+  return enriched.filter(m => !isPlaceholderMatch(m));
 }
 
 /* ---------- Settlement logic ---------- */
@@ -105,23 +172,21 @@ async function settleMatchById(matchId: string, nm: NormalizedMatch, result: Job
       if (updErr) { result.errors.push(`update prediction ${pred.id}: ${updErr.message}`); continue; }
       result.predictionsUpdatedCount++;
       if (hit && payout > 0) {
+        await adjustPoints(pred.user_id, payout, 'settle', `预测命中返还 ${payout} 积分`);
+        result.pointsAwardedCount++;
         anyWon = true;
-        try { await adjustPoints(pred.user_id, payout, '命中返还', pred.id); result.pointsAwardedCount++; }
-        catch (e: unknown) { result.errors.push(`award points ${pred.user_id}: ${e instanceof Error ? e.message : String(e)}`); }
       }
     }
-    await admin.from('markets').update({ market_result: anyWon ? 'won' : 'lost' }).eq('id', market.id);
+    await admin.from('markets').update({ market_result: anyWon ? 'hit' : 'miss' }).eq('id', market.id);
   }
-
-  const { error: settleErr } = await admin.from('matches').update({ status: 'settled' }).eq('id', matchId);
-  if (settleErr) { result.errors.push(`settle match ${matchId}: ${settleErr.message}`); return false; }
+  await admin.from('matches').update({ status: 'settled' }).eq('id', matchId);
   return true;
 }
 
-/* ---------- Main entry ---------- */
+/* ---------- Main export ---------- */
 
 export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
-  const result: JobResult = { ok: true, message: '', createdMatchesCount: 0, updatedMatchesCount: 0, settledMatchesCount: 0, lockedCount: 0, predictionsUpdatedCount: 0, pointsAwardedCount: 0, errors: [] };
+  const result: JobResult = { ok: true, message: '', createdMatchesCount: 0, updatedMatchesCount: 0, settledMatchesCount: 0, lockedCount: 0, predictionsUpdatedCount: 0, pointsAwardedCount: 0, oddsBackfilledCount: 0, errors: [] };
 
   let matches: NormalizedMatch[] | null = null;
   try { matches = await fetchNormalizedFromLazqApi(); console.log(`Fetched ${matches.length} matches from lazq API`); }
@@ -149,17 +214,24 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
         const { error: updErr } = await admin.from('matches').update(payload).eq('id', existing.id);
         if (updErr) { result.errors.push(`update ${nm.externalId}: ${updErr.message}`); continue; }
         result.updatedMatchesCount++;
-        // Update existing markets' option_odds (backfill empty ones)
+
+        // Backfill option_odds for existing markets
         const { data: existingMarkets } = await admin.from('markets').select('id, market_type, option_odds').eq('match_id', existing.id);
         if (existingMarkets) {
           for (const mkt of existingMarkets) {
             const optOdds = getOptionOddsForMarket(mkt.market_type as MarketType, nm.odds);
-            // Always update option_odds if we have data from lazq
             if (Object.keys(optOdds).length > 0) {
-              await admin.from('markets').update({ option_odds: optOdds }).eq('id', mkt.id);
+              const currentOdds = mkt.option_odds ?? {};
+              const isEmpty = Object.keys(currentOdds).length === 0;
+              // Always update if empty, or if new data has more keys
+              if (isEmpty || Object.keys(optOdds).length > Object.keys(currentOdds).length) {
+                await admin.from('markets').update({ option_odds: optOdds, multiplier: defaultMultiplier(optOdds, MULTIPLIER_DEFAULT[mkt.market_type as MarketType] ?? 1.8) }).eq('id', mkt.id);
+                result.oddsBackfilledCount++;
+              }
             }
           }
         }
+
         if (nm.state === -1 && existing.status !== 'settled' && nm.homeScore != null && nm.awayScore != null) {
           if (await settleMatchById(existing.id, nm, result)) result.settledMatchesCount++;
         }
@@ -201,10 +273,32 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
     }
   }
 
+  // Delete duplicate matches (same home_team + away_team + start_time, keep the one with odds)
+  const { data: allMatches } = await admin.from('matches').select('id, home_team, away_team, start_time').eq('external_provider', 'lazq');
+  if (allMatches && allMatches.length > 0) {
+    const seen = new Map<string, string[]>(); // key -> [id, ...]
+    for (const m of allMatches) {
+      const key = `${m.home_team}|${m.away_team}|${m.start_time}`;
+      const ids = seen.get(key) ?? [];
+      ids.push(m.id);
+      seen.set(key, ids);
+    }
+    for (const entry of Array.from(seen.entries())) {
+      const ids = entry[1];
+      if (ids.length <= 1) continue;
+      // Keep the first one, delete the rest
+      const toDelete = ids.slice(1);
+      await admin.from('predictions').delete().in('match_id', toDelete);
+      await admin.from('markets').delete().in('match_id', toDelete);
+      await admin.from('matches').delete().in('id', toDelete);
+      console.log(`Deleted ${toDelete.length} duplicate matches for key`);
+    }
+  }
+
   try { const lr = await autoLockMarkets(); result.lockedCount = lr.lockedCount; }
   catch (e: unknown) { result.errors.push(`autoLock: ${e instanceof Error ? e.message : String(e)}`); }
 
-  result.message = [`Created: ${result.createdMatchesCount}`, `Updated: ${result.updatedMatchesCount}`, `Settled: ${result.settledMatchesCount}`, `Locked: ${result.lockedCount}`, `Preds: ${result.predictionsUpdatedCount}`, `Points: ${result.pointsAwardedCount}`, result.errors.length ? `Errors: ${result.errors.length}` : ''].filter(Boolean).join(', ');
+  result.message = [`Created: ${result.createdMatchesCount}`, `Updated: ${result.updatedMatchesCount}`, `Odds backfilled: ${result.oddsBackfilledCount}`, `Settled: ${result.settledMatchesCount}`, `Locked: ${result.lockedCount}`, `Preds: ${result.predictionsUpdatedCount}`, `Points: ${result.pointsAwardedCount}`, result.errors.length ? `Errors: ${result.errors.length}` : ''].filter(Boolean).join(', ');
   if (result.errors.length > 0) result.ok = false;
   return result;
 }
