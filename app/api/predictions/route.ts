@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     }
 
     const { data: pred, error: predErr } = await admin.from('predictions').insert({
-      user_id: user.id, match_id: matchId, market_id: marketId, selected_option: selectedOption, stake_points: stake, status: 'pending', payout_points: 0,
+      user_id: user.id, match_id: resolvedMatchId, market_id: marketId, selected_option: selectedOption, stake_points: stake, status: 'pending', payout_points: 0,
     }).select('*').single();
 
     if (predErr || !pred) return NextResponse.json({ error: 'submit failed' }, { status: 500 });
