@@ -1,23 +1,22 @@
 'use client';
 import { WORLD_CUP_RANKINGS, TIER_COLORS } from '../../lib/rankings';
 import { getTeamFlag } from '../../lib/utils';
-import Link from 'next/link';
 
 export default function RankingsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 animate-fade-in">
-      <button onClick={() => window.history.back()} className="mb-4 flex items-center gap-1.5 text-sm text-gray-400 transition hover:text-gray-900">鈫?杩斿洖</button>
-      <h1 className="text-2xl font-black text-gray-900 mb-2">馃弳 FIFA 瀹炲姏鎺掑悕</h1>
-      <p className="text-sm text-gray-400 mb-6">鍩轰簬 Opta/Fox/璧旂巼绛夌患鍚堟暟鎹紝鍙嶆槧鍚勯槦涓栫晫鏉ず鍐犵珵浜夊姏</p>
+      <button onClick={() => window.history.back()} className="mb-4 flex items-center gap-1.5 text-sm text-gray-400 transition hover:text-gray-900">← 返回</button>
+      <h1 className="text-2xl font-black text-gray-900 mb-2">🏆 FIFA实力排行</h1>
+      <p className="text-sm text-gray-400 mb-6">基于 Opta/Fox/赔率等综合数据，反映各队世界杯夺冠竞争力</p>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="max-h-[70vh] overflow-y-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-gray-50 z-10">
               <tr className="text-gray-400 text-xs">
-                <th className="py-2.5 px-3 text-left w-12">鎺掑悕</th>
-                <th className="py-2.5 px-3 text-left">鐞冮槦</th>
-                <th className="py-2.5 px-3 text-center">妗ｄ綅</th>
-                <th className="py-2.5 px-3 text-left hidden sm:table-cell">绠€璇?/th>
+                <th className="py-2.5 px-3 text-left w-12">排名</th>
+                <th className="py-2.5 px-3 text-left">球队</th>
+                <th className="py-2.5 px-3 text-center">档位</th>
+                <th className="py-2.5 px-3 text-left hidden sm:table-cell">简评</th>
               </tr>
             </thead>
             <tbody>
