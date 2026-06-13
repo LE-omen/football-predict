@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -38,23 +38,55 @@ export default function HomePage() {
   if (!user) {
     return (
       <div className="relative mx-auto max-w-xl px-4 py-24 text-center animate-fade-in">
-        <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-accent/10 text-5xl">
+        <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-red-50 text-5xl">
           ⚽
         </div>
-        <h1 className="mb-3 text-4xl font-black tracking-tight text-zinc-900">
-          足球竞猜
+        <h1 className="mb-3 text-4xl font-black tracking-tight text-gray-900">
+          足球预测
         </h1>
-        <p className="mb-2 text-lg text-zinc-500">
+        <p className="mb-2 text-lg text-gray-500">
           好友之间的世界杯赛果预测积分站
         </p>
-        <p className="mb-12 text-sm text-zinc-400">
+        <p className="mb-10 text-sm text-gray-400">
           虚拟积分 · 纯属娱乐 · 不涉及真实货币
         </p>
+
+        {/* 玩法说明 - 未登录也展示 */}
+        <div className="mb-10 text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-base font-bold text-gray-900 mb-4">📋 玩法说明</h2>
+          <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
+            <div className="flex gap-3">
+              <span className="text-red-500 font-bold shrink-0">1</span>
+              <span>使用<strong>邀请码</strong>注册，每人获得 <strong className="text-red-500">10,000</strong> 初始积分</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="text-red-500 font-bold shrink-0">2</span>
+              <span>进入赛程选择比赛，可预测<strong>胜平负、比分、进球数、双方是否进球、半场胜平负</strong>共 5 种玩法</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="text-red-500 font-bold shrink-0">3</span>
+              <span>每次投入 <strong>100~5,000</strong> 积分（100 的倍数），单场上限 5,000 积分</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="text-red-500 font-bold shrink-0">4</span>
+              <span>比赛<strong>开赛前 30 分钟锁定</strong>，之后不可再参与</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="text-red-500 font-bold shrink-0">5</span>
+              <span>命中后按<strong>投入积分 × 参考指数</strong>返还，未命中不返还</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="text-red-500 font-bold shrink-0">6</span>
+              <span>积分低于 100 可领取<strong>每日补给</strong>，每次 1,000 积分，每天最多 3 次</span>
+            </div>
+          </div>
+        </div>
+
         <div className="flex items-center justify-center gap-3">
-          <Link href="/login" className="btn-ghost">
+          <Link href="/login" className="rounded-lg border border-gray-200 px-6 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50">
             登录
           </Link>
-          <Link href="/register" className="btn-primary">
+          <Link href="/register" className="bg-red-500 text-white font-semibold rounded-lg px-6 py-2.5 text-sm shadow-sm hover:bg-red-600 transition">
             邀请注册
           </Link>
         </div>
@@ -64,80 +96,84 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 animate-fade-in">
-      {/* Welcome Card */}
-      <div className="glass-card-static relative mb-8 overflow-hidden p-6">
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            background:
-              'radial-gradient(ellipse at 70% 20%, rgba(220,38,38,0.06) 0%, transparent 60%)',
-          }}
-        />
+      {/* 欢迎卡片 */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm relative mb-6 overflow-hidden p-6">
         <div className="relative flex items-center justify-between">
           <div>
-            <div className="text-sm text-zinc-400">欢迎回来</div>
-            <div className="mt-1 text-3xl font-black tracking-tight text-zinc-900">
+            <div className="text-sm text-gray-400">欢迎回来</div>
+            <div className="mt-1 text-3xl font-black tracking-tight text-gray-900">
               {user.nickname}
             </div>
             <div className="mt-1.5 flex items-center gap-2">
-              <span className="text-2xl font-black text-accent">
+              <span className="text-2xl font-black text-red-500">
                 {user.points.toLocaleString('zh-CN')}
               </span>
-              <span className="text-sm font-medium text-zinc-400">积分</span>
+              <span className="text-sm font-medium text-gray-400">积分</span>
             </div>
           </div>
           <button
             onClick={claimRelief}
             disabled={reliefLoading}
-            className="btn-primary text-sm"
+            className="bg-red-500 text-white font-semibold rounded-xl px-5 py-2.5 text-sm shadow-sm hover:bg-red-600 transition disabled:opacity-50"
           >
             {reliefLoading ? '领取中…' : '每日补给'}
           </button>
         </div>
         {reliefMsg && (
-          <div className="relative mt-4 rounded-xl bg-accent/[0.06] px-4 py-2.5 text-sm font-medium text-accent animate-fade-in">
+          <div className="relative mt-4 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-500 animate-fade-in">
             {reliefMsg}
           </div>
         )}
       </div>
 
-      {/* Feature Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Link href="/matches" className="glass-card group p-6 animate-slide-up">
-          <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent/[0.06] text-xl transition group-hover:bg-accent/[0.12]">
-            🏟️
-          </div>
-          <div className="text-base font-bold text-zinc-900 group-hover:text-accent transition-colors">
-            赛程
-          </div>
-          <div className="mt-1 text-sm text-zinc-400">
-            查看比赛并提交预测
-          </div>
+      {/* 快捷入口 */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-6">
+        <Link href="/matches" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-red-200 transition-all animate-slide-up">
+          <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-xl">🏟️</div>
+          <div className="text-sm font-bold text-gray-900">赛程</div>
+          <div className="mt-0.5 text-xs text-gray-400">查看比赛并提交预测</div>
         </Link>
+        <Link href="/leaderboard" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-red-200 transition-all animate-slide-up">
+          <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-xl">🏆</div>
+          <div className="text-sm font-bold text-gray-900">好友积分榜</div>
+          <div className="mt-0.5 text-xs text-gray-400">看看谁领先</div>
+        </Link>
+        <Link href="/my" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-red-200 transition-all animate-slide-up">
+          <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-xl">📊</div>
+          <div className="text-sm font-bold text-gray-900">我的预测</div>
+          <div className="mt-0.5 text-xs text-gray-400">预测记录与积分流水</div>
+        </Link>
+      </div>
 
-        <Link href="/leaderboard" className="glass-card group p-6 animate-slide-up" style={{ animationDelay: '0.05s' }}>
-          <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent/[0.06] text-xl transition group-hover:bg-accent/[0.12]">
-            🏆
+      {/* 玩法说明 */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <h2 className="text-base font-bold text-gray-900 mb-4">📋 玩法说明</h2>
+        <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
+          <div className="flex gap-3">
+            <span className="text-red-500 font-bold shrink-0">1</span>
+            <span>使用<strong>邀请码</strong>注册，每人获得 <strong className="text-red-500">10,000</strong> 初始积分</span>
           </div>
-          <div className="text-base font-bold text-zinc-900 group-hover:text-accent transition-colors">
-            好友积分榜
+          <div className="flex gap-3">
+            <span className="text-red-500 font-bold shrink-0">2</span>
+            <span>进入赛程选择比赛，可预测<strong>胜平负、比分、进球数、双方是否进球、半场胜平负</strong>共 5 种玩法</span>
           </div>
-          <div className="mt-1 text-sm text-zinc-400">
-            看看谁领先
+          <div className="flex gap-3">
+            <span className="text-red-500 font-bold shrink-0">3</span>
+            <span>每次投入 <strong>100~5,000</strong> 积分（100 的倍数），单场上限 5,000 积分</span>
           </div>
-        </Link>
-
-        <Link href="/my" className="glass-card group p-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent/[0.06] text-xl transition group-hover:bg-accent/[0.12]">
-            📊
+          <div className="flex gap-3">
+            <span className="text-red-500 font-bold shrink-0">4</span>
+            <span>比赛<strong>开赛前 30 分钟锁定</strong>，之后不可再参与</span>
           </div>
-          <div className="text-base font-bold text-zinc-900 group-hover:text-accent transition-colors">
-            我的预测
+          <div className="flex gap-3">
+            <span className="text-red-500 font-bold shrink-0">5</span>
+            <span>命中后按<strong>投入积分 × 参考指数</strong>返还，未命中不返还</span>
           </div>
-          <div className="mt-1 text-sm text-zinc-400">
-            预测记录与积分流水
+          <div className="flex gap-3">
+            <span className="text-red-500 font-bold shrink-0">6</span>
+            <span>积分低于 100 可领取<strong>每日补给</strong>，每次 1,000 积分，每天最多 3 次</span>
           </div>
-        </Link>
+        </div>
       </div>
     </div>
   );
