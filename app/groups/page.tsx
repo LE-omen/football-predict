@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { getTeamFlag } from '../../lib/utils';
+import TeamFlag from '../../components/TeamFlag';
 import { getTeamRank } from '../../lib/rankings';
 import Link from 'next/link';
 
@@ -49,7 +49,7 @@ function GroupCard({ group }: { group: GroupData }) {
         <span className="text-white font-black text-lg">组 {group.letter}</span>
         <div className="flex gap-1.5">
           {group.teams.map((t) => (
-            <span key={t} className="text-lg">{getTeamFlag(t)}</span>
+            <span key={t} className="text-lg"><TeamFlag team={t} size={20} /></span>
           ))}
         </div>
       </div>
@@ -80,7 +80,7 @@ function GroupCard({ group }: { group: GroupData }) {
                   }`}
                 >
                   <td className="py-2 px-2 font-medium text-gray-900">
-                    <span className="mr-1">{getTeamFlag(row.team)}</span>
+                    <span className="mr-1"><TeamFlag team={row.team} size={20} /></span>
                     <span className="text-[10px] text-red-400 font-bold mr-0.5">No.{row.fifaRank}</span>
                     {row.team}
                   </td>

@@ -1,7 +1,8 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
-import { formatDate, getTeamFlag } from '../lib/utils';
+import { formatDate } from '../lib/utils';
+import TeamFlag from './TeamFlag';
 import { getTeamRank } from '../lib/rankings';
 import type { MatchItem } from '../types/match';
 
@@ -69,13 +70,13 @@ export default function MatchCard({ match }: { match: MatchItem }) {
         <div className="flex-1 text-right">
           <div className="truncate text-lg font-bold text-gray-900 max-w-[130px] ml-auto">
             <RankBadge team={match.home_team} />{' '}
-            <span className="mr-1.5">{getTeamFlag(match.home_team)}</span>{match.home_team}
+            <span className="mr-1.5"><TeamFlag team={match.home_team} /></span>{match.home_team}
           </div>
         </div>
         <ScoreDisplay match={match} />
         <div className="flex-1 text-left">
           <div className="truncate text-lg font-bold text-gray-900 max-w-[130px]">
-            {match.away_team}<span className="ml-1.5">{getTeamFlag(match.away_team)}</span>{' '}
+            {match.away_team}<span className="ml-1.5"><TeamFlag team={match.away_team} /></span>{' '}
             <RankBadge team={match.away_team} />
           </div>
         </div>

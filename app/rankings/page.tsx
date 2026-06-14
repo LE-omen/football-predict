@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 import { WORLD_CUP_RANKINGS, TIER_COLORS } from '../../lib/rankings';
-import { getTeamFlag } from '../../lib/utils';
+import TeamFlag from '../../components/TeamFlag';
 
 export default function RankingsPage() {
   return (
@@ -28,7 +28,7 @@ export default function RankingsPage() {
                       {r.rank <= 3 ? <span className="text-red-500">#{r.rank}</span> : r.rank}
                     </td>
                     <td className="py-2.5 px-3 font-medium text-gray-900">
-                      <span className="mr-1.5">{getTeamFlag(r.team)}</span>{r.team}
+                      <span className="mr-1.5"><TeamFlag team={r.team} size={20} /></span>{r.team}
                     </td>
                     <td className="py-2.5 px-3 text-center">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${tierClass}`}>{r.tier}</span>
