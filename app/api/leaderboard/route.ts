@@ -8,6 +8,7 @@ export async function GET() {
     const { data, error } = await admin
       .from('users')
       .select('id, nickname, points')
+      .neq('role', 'admin')
       .order('points', { ascending: false })
       .limit(100);
 
