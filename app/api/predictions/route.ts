@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { requireUser } from '../../../lib/auth';
 import { createAdminClient } from '../../../lib/supabase/admin';
 import { isValidStake } from '../../../lib/validators';
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'missing params' }, { status: 400 });
     }
     if (!isValidStake(stake)) {
-      return NextResponse.json({ error: 'stake must be 100~5000, multiple of 100' }, { status: 400 });
+      return NextResponse.json({ error: '投入金币不能低于100' }, { status: 400 });
     }
 
     const admin = createAdminClient();

@@ -233,6 +233,7 @@ export default function MatchDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Record<string, string | null>>({});
   const [stakes, setStakes] = useState<Record<string, number>>({});
+  const [customStake, setCustomStake] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [msg, setMsg] = useState<Record<string, { type: 'ok' | 'err'; text: string } | null>>({});
   const [activeTab, setActiveTab] = useState<MarketType>('1x2');
@@ -266,7 +267,8 @@ export default function MatchDetailPage() {
 
   async function handleSubmit(marketId: string) {
     const opt = selected[marketId];
-    const stake = stakes[marketId] ?? 200;
+    const customVal = customStake[marketId];
+    const stake = customVal ? Number(customVal) : (stakes[marketId] ?? 200);
     if (!opt) return;
     setSubmitting(marketId);
     setMsg((p) => ({ ...p, [marketId]: null }));
@@ -376,31 +378,52 @@ export default function MatchDetailPage() {
                   已选: <span className="font-medium text-gray-900">{prettyOpt(currentMarket.market_type, selected[currentMarket.id]!)}</span>
                 </span>
                 <span className="text-xl font-black text-red-500">
-                  {stakes[currentMarket.id] ?? 200} 金币
+                  🪙 {customStake[currentMarket.id] ? Number(customStake[currentMarket.id]).toLocaleString() : (stakes[currentMarket.id] ?? 200).toLocaleString()} 金币
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex flex-1 flex-wrap gap-1.5">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {[100, 200, 500, 1000, 2000, 5000].map((v) => (
                     <button
                       key={v}
                       type="button"
-                      onClick={() => setStakes((p) => ({ ...p, [currentMarket.id]: v }))}
-                      className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
-                        (stakes[currentMarket.id] ?? 200) === v
+                      disabled={locked}
+                      onClick={() => {
+                        setStakes((p) => ({ ...p, [currentMarket.id]: v }));
+                        setCustomStake((p) => ({ ...p, [currentMarket.id]: '' }));
+                      }}
+                      className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition disabled:opacity-30 ${
+                        (stakes[currentMarket.id] ?? 200) === v && !customStake[currentMarket.id]
                           ? 'bg-red-500 text-white shadow-sm'
                           : 'border border-gray-100 bg-gray-50 text-gray-600 hover:border-red-200 hover:bg-red-50/50'
                       }`}
                     >
-                      {v}
+                      {v.toLocaleString()}
                     </button>
                   ))}
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-400">任意</span>
+                    <input
+                      type="number"
+                      min={100}
+                      step={1}
+                      placeholder="自定义"
+                      value={customStake[currentMarket.id] ?? ''}
+                      disabled={locked}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCustomStake((p) => ({ ...p, [currentMarket.id]: val }));
+                        if (val) setStakes((p) => ({ ...p, [currentMarket.id]: Number(val) || 0 }));
+                      }}
+                      className="w-20 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-bold text-gray-700 focus:border-red-300 focus:outline-none focus:ring-1 focus:ring-red-300 disabled:opacity-30"
+                    />
+                  </div>
                 </div>
                 <button
                   type="button"
                   disabled={submitting === currentMarket.id || !selected[currentMarket.id]}
                   onClick={() => handleSubmit(currentMarket.id)}
-                  className="bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl px-6 py-2.5 text-sm shadow-sm hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl px-6 py-2.5 text-sm shadow-sm hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting === currentMarket.id ? '提交中…' : '确认预测'}
                 </button>

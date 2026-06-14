@@ -4,10 +4,10 @@ export const APP_NAME = '足球金币预测';
 export const POINTS_INITIAL = 10000;
 
 export const STAKE_MIN = 100;
-export const STAKE_MAX = 5000;
+export const STAKE_MAX = 999999;
 export const STAKE_STEP = 100;
 
-export const MATCH_USER_STAKE_LIMIT = 5000;
+// No per-match limit
 
 export const LOCK_MINUTES_BEFORE_KICKOFF = 30;
 
