@@ -7,7 +7,7 @@ type Props = {
 export default function PointsBadge({ points }: Props) {
   return (
     <span className="badge-accent">
-      {points.toLocaleString('zh-CN')} 积分
+      🪙 {points.toLocaleString('zh-CN')} 金币
     </span>
   );
 }

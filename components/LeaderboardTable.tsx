@@ -23,7 +23,7 @@ export default function LeaderboardTable({ users }: Props) {
               昵称
             </th>
             <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              积分
+              金币
             </th>
           </tr>
         </thead>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import type { PredictionHistoryItem } from '../../types/prediction';
 import type { SafeUser } from '../../types/user';
@@ -51,7 +51,7 @@ export default function MyPage() {
   }
 
   async function handleDeleteAccount() {
-    if (!confirm('确定要注销账号吗？此操作不可撤销，所有积分和预测记录将被删除。')) return;
+    if (!confirm('确定要注销账号吗？此操作不可撤销，所有金币和预测记录将被删除。')) return;
     try {
       await fetch('/api/user', { method: 'DELETE' });
       window.location.href = '/';
@@ -120,9 +120,9 @@ export default function MyPage() {
         <PredictionHistory items={predictions} />
       </div>
 
-      {/* 积分流水 */}
+      {/* 金币流水 */}
       <div>
-        <h2 className="text-xl font-black text-gray-900 mb-4">💰 积分流水</h2>
+        <h2 className="text-xl font-black text-gray-900 mb-4">💰 金币流水</h2>
         {txs.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center text-gray-400">暂无流水</div>
         ) : (

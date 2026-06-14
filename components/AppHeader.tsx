@@ -52,7 +52,7 @@ export default function AppHeader() {
                 </Link>
               )}
               <div className="ml-2 flex items-center gap-2">
-                <span className="badge-accent">{user.points.toLocaleString()} 积分</span>
+                <span className="badge-accent">🪙 {user.points.toLocaleString()} 金币</span>
                 <button
                   className="rounded-lg px-2.5 py-1.5 text-gray-400 transition hover:bg-gray-50 hover:text-gray-600"
                   onClick={async () => {

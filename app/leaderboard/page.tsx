@@ -18,7 +18,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 animate-fade-in">
-      <h1 className="section-title mb-6">🏆 好友积分榜</h1>
+      <h1 className="section-title mb-6">🏆 好友金币榜</h1>
       {loading ? (
         <div className="py-16 text-center text-zinc-400">
           <div className="mb-3 inline-block h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />

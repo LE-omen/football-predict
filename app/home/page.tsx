@@ -45,17 +45,17 @@ export default function HomePage() {
           足球预测
         </h1>
         <p className="mb-2 text-lg text-gray-500">
-          好友之间的世界杯赛果预测积分站
+          好友之间的世界杯赛果预测金币站
         </p>
         <p className="mb-10 text-sm text-gray-400">
-          虚拟积分 · 纯属娱乐 · 不涉及真实货币
+          虚拟金币 · 纯属娱乐 · 不涉及真实货币
         </p>
         <div className="mb-10 text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <h2 className="text-base font-bold text-gray-900 mb-4">📋 玩法说明</h2>
           <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
             <div className="flex gap-3">
               <span className="text-red-500 font-bold shrink-0">1</span>
-              <span>使用<strong>邀请码</strong>注册，每人获得 <strong className="text-red-500">10,000</strong> 初始积分</span>
+              <span>使用<strong>邀请码</strong>注册，每人获得 <strong className="text-red-500">10,000</strong> 初始金币</span>
             </div>
             <div className="flex gap-3">
               <span className="text-red-500 font-bold shrink-0">2</span>
@@ -63,7 +63,7 @@ export default function HomePage() {
             </div>
             <div className="flex gap-3">
               <span className="text-red-500 font-bold shrink-0">3</span>
-              <span>每次投入 <strong>100~5,000</strong> 积分（100 的倍数），单场不限总投入</span>
+              <span>每次投入 <strong>100~5,000</strong> 金币（100 的倍数），单场不限总投入</span>
             </div>
             <div className="flex gap-3">
               <span className="text-red-500 font-bold shrink-0">4</span>
@@ -71,11 +71,11 @@ export default function HomePage() {
             </div>
             <div className="flex gap-3">
               <span className="text-red-500 font-bold shrink-0">5</span>
-              <span>命中后按<strong>投入积分 × 参考指数</strong>返还，未命中不返还</span>
+              <span>命中后按<strong>投入金币 × 参考指数</strong>返还，未命中不返还</span>
             </div>
             <div className="flex gap-3">
               <span className="text-red-500 font-bold shrink-0">6</span>
-              <span>积分低于 100 可领取<strong>每日补给</strong>，每次 1,000 积分，每天最多 3 次</span>
+              <span>金币低于 100 可领取<strong>每日补给</strong>，每次 1,000 金币，每天最多 3 次</span>
             </div>
           </div>
         </div>
@@ -99,8 +99,8 @@ export default function HomePage() {
             <div className="text-sm text-gray-400">欢迎回来</div>
             <div className="mt-1 text-3xl font-black tracking-tight text-gray-900">{user.nickname}</div>
             <div className="mt-1.5 flex items-center gap-2">
-              <span className="text-2xl font-black text-red-500">{user.points.toLocaleString('zh-CN')}</span>
-              <span className="text-sm font-medium text-gray-400">积分</span>
+              <span className="text-2xl font-black text-red-500">🪙 {user.points.toLocaleString('zh-CN')}</span>
+              <span className="text-sm font-medium text-gray-400">金币</span>
             </div>
           </div>
           <button onClick={claimRelief} disabled={reliefLoading}
@@ -121,13 +121,13 @@ export default function HomePage() {
         </Link>
         <Link href="/leaderboard" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-red-200 transition-all animate-slide-up">
           <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-xl">🏆</div>
-          <div className="text-sm font-bold text-gray-900">好友积分榜</div>
+          <div className="text-sm font-bold text-gray-900">好友金币榜</div>
           <div className="mt-0.5 text-xs text-gray-400">看看谁领先</div>
         </Link>
         <Link href="/my" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-red-200 transition-all animate-slide-up">
           <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-xl">📊</div>
           <div className="text-sm font-bold text-gray-900">我的预测</div>
-          <div className="mt-0.5 text-xs text-gray-400">预测记录与积分流水</div>
+          <div className="mt-0.5 text-xs text-gray-400">预测记录与金币流水</div>
         </Link>
       </div>
 
@@ -174,7 +174,7 @@ export default function HomePage() {
         <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
           <div className="flex gap-3">
             <span className="text-red-500 font-bold shrink-0">1</span>
-            <span>使用<strong>邀请码</strong>注册，每人获得 <strong className="text-red-500">10,000</strong> 初始积分</span>
+            <span>使用<strong>邀请码</strong>注册，每人获得 <strong className="text-red-500">10,000</strong> 初始金币</span>
           </div>
           <div className="flex gap-3">
             <span className="text-red-500 font-bold shrink-0">2</span>
@@ -182,7 +182,7 @@ export default function HomePage() {
           </div>
           <div className="flex gap-3">
             <span className="text-red-500 font-bold shrink-0">3</span>
-            <span>每次投入 <strong>100~5,000</strong> 积分（100 的倍数），单场不限总投入</span>
+            <span>每次投入 <strong>100~5,000</strong> 金币（100 的倍数），单场不限总投入</span>
           </div>
           <div className="flex gap-3">
             <span className="text-red-500 font-bold shrink-0">4</span>
@@ -190,11 +190,11 @@ export default function HomePage() {
           </div>
           <div className="flex gap-3">
             <span className="text-red-500 font-bold shrink-0">5</span>
-            <span>命中后按<strong>投入积分 × 参考指数</strong>返还，未命中不返还</span>
+            <span>命中后按<strong>投入金币 × 参考指数</strong>返还，未命中不返还</span>
           </div>
           <div className="flex gap-3">
             <span className="text-red-500 font-bold shrink-0">6</span>
-            <span>积分低于 100 可领取<strong>每日补给</strong>，每次 1,000 积分，每天最多 3 次</span>
+            <span>金币低于 100 可领取<strong>每日补给</strong>，每次 1,000 金币，每天最多 3 次</span>
           </div>
         </div>
       </div>

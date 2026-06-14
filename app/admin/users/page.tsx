@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import AdminGuard from '../../../components/AdminGuard';
 
@@ -16,7 +16,7 @@ export default function AdminUsersPage() {
         {loading ? <div className="text-white/60">加载中...</div> : (
           <div className="overflow-hidden rounded-2xl border border-white/10">
             <table className="min-w-full text-sm">
-              <thead className="bg-white/5 text-left text-white/70"><tr><th className="px-4 py-3">昵称</th><th className="px-4 py-3">角色</th><th className="px-4 py-3 text-right">积分</th></tr></thead>
+              <thead className="bg-white/5 text-left text-white/70"><tr><th className="px-4 py-3">昵称</th><th className="px-4 py-3">角色</th><th className="px-4 py-3 text-right">金币</th></tr></thead>
               <tbody>{users.map((u) => (
                 <tr key={u.id} className="border-t border-white/10">
                   <td className="px-4 py-3">{u.nickname}</td>

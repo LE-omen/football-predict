@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -280,7 +280,7 @@ export default function MatchDetailPage() {
       if (res.ok) {
         setMsg((prev) => ({
           ...prev,
-          [marketId]: { type: 'ok', text: `投入 ${stake} 金币成功！` },
+          [marketId]: { type: 'ok', text: `投入 ${stake} 积分成功！` },
         }));
         fetch('/api/auth/me').then((r) => r.json()).catch(() => {});
       } else {
@@ -335,7 +335,7 @@ export default function MatchDetailPage() {
       )}
       {canPredict && (
         <div className="mt-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-500 animate-fade-in">
-          🎯 选择预测项目和选项，投入金币参与预测
+          🎯 选择预测项目和选项，投入积分参与预测
         </div>
       )}
 
@@ -376,7 +376,7 @@ export default function MatchDetailPage() {
                   已选: <span className="font-medium text-gray-900">{prettyOpt(currentMarket.market_type, selected[currentMarket.id]!)}</span>
                 </span>
                 <span className="text-xl font-black text-red-500">
-                  {stakes[currentMarket.id] ?? 200} 金币
+                  {stakes[currentMarket.id] ?? 200} 积分
                 </span>
               </div>
               <div className="flex items-center gap-2">

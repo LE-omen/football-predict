@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import Link from 'next/link';
 import AdminGuard from '../../components/AdminGuard';
 
@@ -14,7 +14,7 @@ export default function AdminIndexPage() {
           </Link>
           <Link href="/admin/users" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md hover:border-red-200 transition-all">
             <div className="text-lg font-bold text-gray-900">👥 用户管理</div>
-            <div className="mt-1 text-sm text-gray-400">查看用户与积分</div>
+            <div className="mt-1 text-sm text-gray-400">查看用户与金币</div>
           </Link>
           <Link href="/admin/invite-codes" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md hover:border-red-200 transition-all">
             <div className="text-lg font-bold text-gray-900">🎟️ 邀请码管理</div>
