@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -36,6 +36,9 @@ export default function AppHeader() {
               </Link>
               <Link href="/leaderboard" className="rounded-lg px-3 py-1.5 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900">
                 排行榜
+              </Link>
+              <Link href="/groups" className="rounded-lg px-3 py-1.5 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900">
+                分组
               </Link>
               <Link href="/rankings" className="rounded-lg px-3 py-1.5 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900">
                 排名

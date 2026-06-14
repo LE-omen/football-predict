@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -146,6 +146,24 @@ export default function HomePage() {
           ].map(t => (
             <span key={t.name} className="bg-gray-50 text-gray-600 rounded-full px-2.5 py-0.5 text-[11px] font-medium">
               No.{t.rank} {t.name}
+            </span>
+          ))}
+        </div>
+      </Link>
+
+
+      <Link href="/groups" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-red-200 transition-all mb-6 block">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-base font-bold text-gray-900">📊 分组积分榜</div>
+            <div className="mt-1 text-xs text-gray-400">世界杯小组赛实时积分排名，点击查看完整榜单</div>
+          </div>
+          <div className="text-gray-300 text-lg">→</div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {['A', 'B', 'C', 'D', 'E', 'F'].map(g => (
+            <span key={g} className="bg-gray-50 text-gray-600 rounded-full px-2.5 py-0.5 text-[11px] font-medium">
+              {g} 组
             </span>
           ))}
         </div>
