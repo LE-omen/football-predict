@@ -1,4 +1,4 @@
-// lib/jobs/updateMatchesAndSettle.ts
+﻿// lib/jobs/updateMatchesAndSettle.ts
 import * as fs from 'fs';
 import * as path from 'path';
 import { createAdminClient } from '../supabase/admin';
@@ -130,6 +130,7 @@ async function settleMatchById(matchId: string, nm: NormalizedMatch, result: Job
     const { data: predictions } = await admin.from('predictions').select('id, user_id, selected_option, stake_points, status').eq('market_id', market.id).eq('status', 'pending');
     if (!predictions || predictions.length === 0) { await admin.from('markets').update({ market_result: 'void' }).eq('id', market.id); continue; }
     const optionOdds = (market.option_odds ?? {}) as Record<string, string>;
+    let anyWon = false;
     for (const pred of predictions) {
       if (pred.status !== 'pending') continue;
       const hit = resolveMarketResult(market.market_type as MarketType, ftH, ftA, htH, htA, pred.selected_option);
@@ -137,9 +138,9 @@ async function settleMatchById(matchId: string, nm: NormalizedMatch, result: Job
       const payout = hit ? calcPayout(pred.stake_points, effMult) : 0;
       await admin.from('predictions').update({ status: hit ? 'won' : 'lost', payout_points: payout }).eq('id', pred.id).eq('status', 'pending');
       result.predictionsUpdatedCount++;
-      if (hit && payout > 0) { await adjustPoints(pred.user_id, payout, 'settle', '预测命中返还'); result.pointsAwardedCount++; }
+      if (hit && payout > 0) { anyWon = true; await adjustPoints(pred.user_id, payout, 'settle', '预测命中返还'); result.pointsAwardedCount++; }
     }
-    await admin.from('markets').update({ market_result: 'hit' }).eq('id', market.id);
+    await admin.from('markets').update({ market_result: anyWon ? 'won' : 'lost' }).eq('id', market.id);
   }
   await admin.from('matches').update({ status: 'settled' }).eq('id', matchId);
   return true;
