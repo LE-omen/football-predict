@@ -1,5 +1,5 @@
-// scripts/backfill-odds.ts
-// 从 lazq API 拉取最新数据，更新所有已有比赛的 option_odds
+﻿// scripts/backfill-odds.ts
+// �?lazq API 拉取最新数据，更新所有已有比赛的 option_odds
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 

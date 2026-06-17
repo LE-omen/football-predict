@@ -11,8 +11,7 @@ export function displayOption(marketType: MarketType, option: string) {
 }
 
 /**
- * 计算命中返还: 使用该选项的独立赔率(option_odds)计算，
- * 如果没有独立赔率则使用默认倍率(multiplier)
+ * 计算命中返还: 使用该选项的独立赔�?option_odds)计算�? * 如果没有独立赔率则使用默认倍率(multiplier)
  */
 export function calcPayout(stake: number, multiplier: number): number {
   return Math.round(stake * multiplier);

@@ -1,4 +1,4 @@
-// lib/settlement.ts
+﻿// lib/settlement.ts
 import { createAdminClient } from './supabase/admin';
 import { is1x2Hit, isExactScoreHit, isTotalGoalsHit, isBttsHit, isHt1x2Hit, calcPayout, getEffectiveMultiplier } from './markets';
 import { adjustPoints } from './points';

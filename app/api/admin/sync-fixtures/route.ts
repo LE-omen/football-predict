@@ -51,20 +51,18 @@ export async function POST() {
 
       for (const m of roundMatches) {
         const lazqMatchId = String(m.id);
-        // Deduplicate: same match can appear in multiple rounds
         if (seen.has(lazqMatchId)) continue;
         seen.add(lazqMatchId);
 
         try {
-          const homeName = teamMap.get(String(m.h)) ?? `Team#${m.h}`;
-          const awayName = teamMap.get(String(m.a)) ?? `Team#${m.a}`;
+          const homeName = teamMap.get(String(m.h)) ?? 'Team#' + m.h;
+          const awayName = teamMap.get(String(m.a)) ?? 'Team#' + m.a;
           const startTime = new Date(m.t * 1000).toISOString();
           const ftHome = parseScore(m.sc[0]);
           const ftAway = parseScore(m.sc[1]);
           const htHome = parseScore(m.sc[2]);
           const htAway = parseScore(m.sc[3]);
 
-          // Try external_provider+external_id first, fallback to api_football_fixture_id
           const { data: existing } = await admin
             .from('matches')
             .select('id, status')
@@ -122,8 +120,9 @@ export async function POST() {
     });
 
     return NextResponse.json({ ok: true, created, updated, skipped });
-  } catch (e: any) {
-    await admin.from('api_sync_logs').insert({ sync_type: 'fixtures_lazq', status: 'error', detail: { error: e?.message } });
-    return NextResponse.json({ error: e?.message ?? 'sync failed' }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'sync failed';
+    await admin.from('api_sync_logs').insert({ sync_type: 'fixtures_lazq', status: 'error', detail: { error: message } });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

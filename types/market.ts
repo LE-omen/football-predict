@@ -1,4 +1,4 @@
-// types/market.ts
+﻿// types/market.ts
 import type { MarketRow, MarketType } from './database';
 
 export interface MarketItem {
@@ -37,6 +37,9 @@ export const marketOptionLabel: Record<string, string> = {
   '5': '5球',
   '6': '6球',
   '7+': '7+球',
+  other_home: '胜其他',
+  other_draw: '平其他',
+  other_away: '负其他',
 };
 
 export function getOptionLabel(value: string): string {

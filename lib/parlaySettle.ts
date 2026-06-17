@@ -1,20 +1,20 @@
 ﻿// lib/parlaySettle.ts
-// 串关结算：当一场比赛结束后，更新相关 bet_legs 状态，结算 bet_lines
+// ���ؽ��㣺��һ�����������󣬸������ bet_legs ״̬������ bet_lines
 
 import { createAdminClient } from './supabase/admin';
 import { adjustPoints } from './points';
 
 /**
- * 一场比赛结算后调用此函数
- * 1. 找到所有关联该比赛的 bet_legs
- * 2. 更新 leg 的 result_status
- * 3. 检查每个 bet 的所有 lines，结算完成的 bet
+ * һ�������������ô˺���
+ * 1. �ҵ����й����ñ����� bet_legs
+ * 2. ���� leg �� result_status
+ * 3. ���ÿ�� bet ������ lines��������ɵ� bet
  */
 export async function settleParlaysForMatch(matchId: string): Promise<{ settledBets: number }> {
   const admin = createAdminClient();
   let settledBets = 0;
 
-  // 1. 找到该比赛关联的所有 bet_legs
+  // 1. �ҵ��ñ������������� bet_legs
   const { data: legs } = await admin
     .from('bet_legs')
     .select('id, bet_id, selection, result_status')
@@ -23,7 +23,7 @@ export async function settleParlaysForMatch(matchId: string): Promise<{ settledB
 
   if (!legs || legs.length === 0) return { settledBets: 0 };
 
-  // 获取该比赛的比分和结果
+  // ��ȡ�ñ����ıȷֺͽ��
   const { data: match } = await admin
     .from('matches')
     .select('ft_home_goals, ft_away_goals, ht_home_goals, ht_away_goals, status')
@@ -34,7 +34,7 @@ export async function settleParlaysForMatch(matchId: string): Promise<{ settledB
     return { settledBets: 0 };
   }
 
-  // 2. 对每个 leg，根据市场类型判断输赢
+  // 2. ��ÿ�� leg�������г������ж���Ӯ
   for (const leg of legs) {
     const { data: market } = await admin
       .from('markets')
@@ -59,7 +59,7 @@ export async function settleParlaysForMatch(matchId: string): Promise<{ settledB
       .eq('id', leg.id);
   }
 
-  // 3. 检查每个相关的 bet
+  // 3. ���ÿ����ص� bet
   const betIds = Array.from(new Set(legs.map(l => l.bet_id)));
   for (const betId of betIds) {
     await settleSingleBet(betId);
@@ -101,25 +101,25 @@ async function settleSingleBet(betId: string): Promise<void> {
   const { data: bet } = await admin.from('bets').select('*').eq('id', betId).single();
   if (!bet || bet.status !== 'pending') return;
 
-  // 获取所有 legs
+  // ��ȡ���� legs
   const { data: legs } = await admin.from('bet_legs').select('id, result_status').eq('bet_id', betId);
   if (!legs) return;
 
-  // 检查是否所有 legs 都已结算
+  // ����Ƿ����� legs ���ѽ���
   const allSettled = legs.every(l => l.result_status !== 'pending');
   if (!allSettled) return;
 
-  // 获取所有 lines
+  // ��ȡ���� lines
   const { data: lines } = await admin.from('bet_lines').select('*').eq('bet_id', betId);
   if (!lines) return;
 
-  // 构建 leg 结果 map
+  // ���� leg ��� map
   const legResultMap = new Map<string, 'won' | 'lost' | 'void'>();
   for (const leg of legs) {
     legResultMap.set(leg.id, leg.result_status as 'won' | 'lost' | 'void');
   }
 
-  // 结算每条 line
+  // ����ÿ�� line
   let totalSettledReturn = 0;
   let anyWon = false;
 
@@ -140,7 +140,7 @@ async function settleSingleBet(betId: string): Promise<void> {
     if (!lineWon) {
       lineStatus = 'lost';
     } else if (hasVoid) {
-      // void 的注，退还该注本金
+      // void ��ע���˻���ע����
       lineStatus = 'void';
       lineReturn = bet.stake_per_line * bet.multiple;
     } else {
@@ -157,14 +157,14 @@ async function settleSingleBet(betId: string): Promise<void> {
       .eq('id', line.id);
   }
 
-  // 更新 bet 状态
+  // ���� bet ״̬
   const betStatus = anyWon ? 'settled' : 'lost';
   await admin
     .from('bets')
     .update({ status: betStatus, settled_return: totalSettledReturn })
     .eq('id', betId);
 
-  // 返还金币
+  // �������
   if (totalSettledReturn > 0) {
     const { data: betInfo } = await admin.from('bets').select('user_id').eq('id', betId).single();
     if (betInfo) {

@@ -4,6 +4,7 @@ import { STAKE_MIN, STAKE_MAX } from './constants';
 export function isValidStake(value: number) {
   if (!Number.isFinite(value)) return false;
   if (value < STAKE_MIN || value > STAKE_MAX) return false;
+  if (value % 100 !== 0) return false;
   return true;
 }
 

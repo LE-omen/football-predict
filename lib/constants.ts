@@ -1,5 +1,5 @@
 ﻿// lib/constants.ts
-export const APP_NAME = '足球金币预测';
+export const APP_NAME = '������Ԥ��';
 
 export const POINTS_INITIAL = 10000;
 
@@ -9,7 +9,8 @@ export const STAKE_STEP = 100;
 
 // No per-match limit
 
-export const LOCK_MINUTES_BEFORE_KICKOFF = 30;
+export const LOCK_MINUTES_BEFORE_KICKOFF = Number(process.env.MATCH_LOCK_MINUTES ?? 30);
+export const ENABLE_LOCK_WINDOW = String(process.env.ENABLE_LOCK_WINDOW ?? 'true') === 'true';
 
 export const RELIEF_AMOUNT = 1000;
 export const RELIEF_MAX_PER_DAY = 3;

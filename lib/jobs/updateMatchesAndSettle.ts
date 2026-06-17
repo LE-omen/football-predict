@@ -182,7 +182,7 @@ async function fetchNormalized(): Promise<NormalizedMatch[]> {
     const key = m.homeTeam + '|' + m.awayTeam;
     const sOdds = oddsMap.get(key);
     if (sOdds) {
-      for (const k of ['1x2', 'exact_score', 'total_goals', 'btts', 'ht_1x2'] as const) {
+      for (const k of ['1x2', 'exact_score', 'total_goals', 'btts', ] as const) {
         if (Object.keys(sOdds[k]).length > 0) m.odds[k] = { ...sOdds[k] };
       }
     }
