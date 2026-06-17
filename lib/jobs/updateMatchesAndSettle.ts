@@ -16,6 +16,7 @@ import { normalizeFromApiResponse, persistNormalized, loadNormalizedFromFile, ty
 import { extractOdds, type ExtractedOdds } from '../data-providers/lazqOddsExtractor';
 import { fetchEspnScoreboard, type EspnEvent } from '../data-providers/espnClient';
 import type { MarketType } from '../../types/database';
+import { settleParlaysForMatch } from '../parlaySettle';
 
 export interface JobResult {
   ok: boolean; message: string;
@@ -296,6 +297,7 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
         if (isFinished && existing.status !== 'settled' && ftH != null && ftA != null) {
           if (await settleMatchById(existing.id, ftH, ftA, htH, htA, result)) {
             result.settledMatchesCount++;
+            try { await settleParlaysForMatch(existing.id); } catch (e) { /* parlay settle error */ }
           }
         }
       } else {
@@ -348,3 +350,4 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
   if (result.errors.length > 0) result.ok = false;
   return result;
 }
+
