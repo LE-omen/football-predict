@@ -1,4 +1,9 @@
 ﻿// lib/jobs/updateMatchesAndSettle.ts
+// Data flow:
+//   1. lazq API -> fixtures + odds (per-option)
+//   2. ESPN API -> scores + match status (post=finished)
+//   3. Auto-settle finished matches
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { createAdminClient } from '../supabase/admin';
@@ -9,21 +14,22 @@ import { is1x2Hit, isExactScoreHit, isTotalGoalsHit, isBttsHit, isHt1x2Hit, calc
 import { autoLockMarkets } from './lock';
 import { normalizeFromApiResponse, persistNormalized, loadNormalizedFromFile, type NormalizedMatch } from '../data-providers/lazqNormalize';
 import { extractOdds, type ExtractedOdds } from '../data-providers/lazqOddsExtractor';
+import { fetchEspnScoreboard, type EspnEvent } from '../data-providers/espnClient';
 import type { MarketType } from '../../types/database';
 
 export interface JobResult {
   ok: boolean; message: string;
   createdMatchesCount: number; updatedMatchesCount: number; settledMatchesCount: number;
   lockedCount: number; predictionsUpdatedCount: number; pointsAwardedCount: number;
-  oddsBackfilledCount: number; errors: string[];
+  oddsBackfilledCount: number; scoreUpdatedCount: number; errors: string[];
 }
 
 const MARKET_DEFS: { market_type: MarketType; title: string; options: string[] }[] = [
-  { market_type: '1x2', title: '胜平负', options: ['home', 'draw', 'away'] },
-  { market_type: 'exact_score', title: '准确比分', options: ['0-0','1-0','0-1','1-1','2-0','0-2','2-1','1-2','2-2','3-0','0-3','3-1','1-3','3-2','2-3','other_home','other_draw','other_away'] },
-  { market_type: 'total_goals', title: '总进球', options: ['0','1','2','3','4','5','6','7+'] },
-  { market_type: 'btts', title: '双方是否进球', options: ['yes', 'no'] },
-  { market_type: 'ht_1x2', title: '半场胜平负', options: ['home', 'draw', 'away'] },
+  { market_type: '1x2', title: '\u80DC\u5E73\u8D1F', options: ['home', 'draw', 'away'] },
+  { market_type: 'exact_score', title: '\u51C6\u786E\u6BD4\u5206', options: ['0-0','1-0','0-1','1-1','2-0','0-2','2-1','1-2','2-2','3-0','0-3','3-1','1-3','3-2','2-3','other_home','other_draw','other_away'] },
+  { market_type: 'total_goals', title: '\u603B\u8FDB\u7403', options: ['0','1','2','3','4','5','6','7+'] },
+  { market_type: 'btts', title: '\u53CC\u65B9\u662F\u5426\u8FDB\u7403', options: ['yes', 'no'] },
+  { market_type: 'ht_1x2', title: '\u534A\u573A\u80DC\u5E73\u8D1F', options: ['home', 'draw', 'away'] },
 ];
 
 function getOptionOddsForMarket(marketType: MarketType, odds: ExtractedOdds): Record<string, string> {
@@ -43,21 +49,99 @@ function defaultMultiplier(optionOdds: Record<string, string>, fallback: number)
 }
 
 function isPlaceholderMatch(nm: NormalizedMatch): boolean {
-  return /[\[\]胜者败者]/.test(nm.homeTeam) || /[\[\]胜者败者]/.test(nm.awayTeam);
+  return /[\[\]\u80DC\u8005\u8D25\u8005]/.test(nm.homeTeam) || /[\[\]\u80DC\u8005\u8D25\u8005]/.test(nm.awayTeam);
 }
 
+// --- ESPN name mapping ---
+// Lazq team name mapping (EN -> CN) loaded from lazq API
+const LAZQ_EN_TO_CN: Record<string, string> = {};
+
+// ESPN name -> lazq name normalization
+const ESPN_TO_LAZQ: Record<string, string> = {
+  'Czechia': 'Czech Republic',
+  'T\u00fcrkiye': 'Turkey',
+  'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+  'Democratic Republic Congo': 'Democratic Rep Congo',
+  'Cape Verde Islands': 'Cape Verde',
+  'United States': 'USA',
+  'Cura\u00e7ao': 'Curacao',
+};
+
+function espnToCn(espnName: string): string {
+  const lazqName = ESPN_TO_LAZQ[espnName] ?? espnName;
+  return LAZQ_EN_TO_CN[lazqName] ?? espnName;
+}
+
+/** Load lazq team mapping from their API response */
+function loadLazqTeams(resp: any): void {
+  try {
+    const teams = resp?.data?.teams;
+    if (!teams) return;
+    const arr: (string | number)[] = Array.isArray(teams) ? teams : [];
+    for (let i = 0; i < arr.length; i += 3) {
+      const cn = String(arr[i + 1]);
+      const en = String(arr[i + 2]);
+      if (en && cn && !en.startsWith('[')) {
+        LAZQ_EN_TO_CN[en] = cn;
+      }
+    }
+    console.log(`Loaded ${Object.keys(LAZQ_EN_TO_CN).length} lazq team mappings`);
+  } catch (e) { console.log(`Lazq team load error: ${e instanceof Error ? e.message : String(e)}`); }
+}
+
+/** Fetch ESPN finished matches and build a map: chineseTeamName -> {homeScore, awayScore, htHome, htAway} */
+async function fetchEspnScores(): Promise<Map<string, { homeScore: number; awayScore: number; htHome: number | null; htAway: number | null }>> {
+  const scoreMap = new Map<string, { homeScore: number; awayScore: number; htHome: number | null; htAway: number | null }>();
+
+  // Fetch a wide date range covering all WC matches
+  try {
+    const events = await fetchEspnScoreboard('20260611', '20260801');
+    for (const ev of events) {
+      const comp = ev.competitions[0];
+      if (!comp || comp.status.type.state !== 'post') continue;
+
+      const homeComp = comp.competitors.find(c => c.homeAway === 'home');
+      const awayComp = comp.competitors.find(c => c.homeAway === 'away');
+      if (!homeComp || !awayComp) continue;
+
+      const hs = parseInt(homeComp.score ?? '', 10);
+      const as = parseInt(awayComp.score ?? '', 10);
+      if (isNaN(hs) || isNaN(as)) continue;
+
+      const homeCn = espnToCn(homeComp.team.displayName);
+      const awayCn = espnToCn(awayComp.team.displayName);
+
+      // Half scores from linescores if available
+      let htHome: number | null = null;
+      let htAway: number | null = null;
+      if (homeComp.linescores && homeComp.linescores.length > 0) htHome = homeComp.linescores[0].value ?? null;
+      if (awayComp.linescores && awayComp.linescores.length > 0) htAway = awayComp.linescores[0].value ?? null;
+
+      // Use team name pair as key (also try reverse for matching)
+      const key = `${homeCn}|${awayCn}`;
+      scoreMap.set(key, { homeScore: hs, awayScore: as, htHome, htAway });
+
+      // Store ESPN event ID for reference
+      console.log(`ESPN: ${homeCn} ${hs}-${as} ${awayCn} (event:${ev.id})`);
+    }
+    console.log(`ESPN scoreboard: ${scoreMap.size} finished matches`);
+  } catch (e) {
+    console.log(`ESPN fetch failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return scoreMap;
+}
+
+// --- Scraper data (for odds fallback) ---
 interface ScraperData {
   oddsMap: Map<string, ExtractedOdds>;
-  scoreMap: Map<string, { homeScore: number | null; awayScore: number | null; halfHomeScore: number | null; halfAwayScore: number | null; state: number }>;
 }
 
 function loadScraperData(): ScraperData {
   const oddsMap = new Map<string, ExtractedOdds>();
-  const scoreMap = new Map<string, { homeScore: number | null; awayScore: number | null; halfHomeScore: number | null; halfAwayScore: number | null; state: number }>();
   const rawDir = path.resolve(process.cwd(), 'data/raw/lazq');
-  if (!fs.existsSync(rawDir)) return { oddsMap, scoreMap };
+  if (!fs.existsSync(rawDir)) return { oddsMap };
   const files = fs.readdirSync(rawDir).filter(f => f.endsWith('.json')).sort().reverse();
-  if (files.length === 0) return { oddsMap, scoreMap };
+  if (files.length === 0) return { oddsMap };
   try {
     const raw = JSON.parse(fs.readFileSync(path.join(rawDir, files[0]), 'utf-8'));
     const items = (Array.isArray(raw) ? raw : [raw]).flatMap((r: any) => Array.isArray(r?.data) ? r.data : []);
@@ -65,28 +149,23 @@ function loadScraperData(): ScraperData {
       if (!item?.homeTeamName || !item?.awayTeamName) continue;
       const key = item.homeTeamName + '|' + item.awayTeamName;
       oddsMap.set(key, extractOdds(item));
-      scoreMap.set(key, {
-        homeScore: item.homeScore ? parseInt(item.homeScore) : null,
-        awayScore: item.awayScore ? parseInt(item.awayScore) : null,
-        halfHomeScore: item.homeHalfScore ? parseInt(item.homeHalfScore) : null,
-        halfAwayScore: item.awayHalfScore ? parseInt(item.awayHalfScore) : null,
-        state: typeof item.state === 'number' ? item.state : 0,
-      });
     }
-    console.log(`Loaded scraper data for ${oddsMap.size} matches`);
+    console.log(`Loaded scraper odds for ${oddsMap.size} matches`);
   } catch (e) { console.log(`Scraper load error: ${e instanceof Error ? e.message : String(e)}`); }
-  return { oddsMap, scoreMap };
+  return { oddsMap };
 }
 
 async function fetchNormalized(): Promise<NormalizedMatch[]> {
+  let apiResp: any;
   let apiMatches: NormalizedMatch[] = [];
   try {
-    const resp = await fetchWorldCupFixtures(2026);
-    apiMatches = normalizeFromApiResponse(resp as any);
-  } catch (e) { console.log(`API failed (${e instanceof Error ? e.message : String(e)}), using local file`); apiMatches = loadNormalizedFromFile() ?? []; }
+    apiResp = await fetchWorldCupFixtures(2026);
+    loadLazqTeams(apiResp);
+    apiMatches = normalizeFromApiResponse(apiResp as any);
+  } catch (e) { console.log(`lazq API failed (${e instanceof Error ? e.message : String(e)}), using local file`); apiMatches = loadNormalizedFromFile() ?? []; }
   if (apiMatches.length === 0) return [];
 
-  const { oddsMap, scoreMap } = loadScraperData();
+  const { oddsMap } = loadScraperData();
 
   return apiMatches.filter(m => !isPlaceholderMatch(m)).map(m => {
     const key = m.homeTeam + '|' + m.awayTeam;
@@ -96,18 +175,11 @@ async function fetchNormalized(): Promise<NormalizedMatch[]> {
         if (Object.keys(sOdds[k]).length > 0) m.odds[k] = { ...sOdds[k] };
       }
     }
-    const sScore = scoreMap.get(key);
-    if (sScore) {
-      if (m.homeScore == null && sScore.homeScore != null) m.homeScore = sScore.homeScore;
-      if (m.awayScore == null && sScore.awayScore != null) m.awayScore = sScore.awayScore;
-      if (m.halfHomeScore == null && sScore.halfHomeScore != null) m.halfHomeScore = sScore.halfHomeScore;
-      if (m.halfAwayScore == null && sScore.halfAwayScore != null) m.halfAwayScore = sScore.halfAwayScore;
-      if (m.state !== -1 && sScore.state === -1) m.state = sScore.state;
-    }
     return m;
   });
 }
 
+// --- Settlement ---
 function resolveMarketResult(marketType: MarketType, ftH: number, ftA: number, htH: number, htA: number, sel: string): boolean {
   switch (marketType) {
     case '1x2': return is1x2Hit(ftH, ftA, sel);
@@ -119,16 +191,19 @@ function resolveMarketResult(marketType: MarketType, ftH: number, ftA: number, h
   }
 }
 
-async function settleMatchById(matchId: string, nm: NormalizedMatch, result: JobResult): Promise<boolean> {
+async function settleMatchById(matchId: string, ftH: number, ftA: number, htH: number, htA: number, result: JobResult): Promise<boolean> {
   const admin = createAdminClient();
-  const ftH = nm.homeScore!, ftA = nm.awayScore!;
-  const htH = nm.halfHomeScore ?? 0, htA = nm.halfAwayScore ?? 0;
   const { data: markets } = await admin.from('markets').select('id, market_type, multiplier, market_result, option_odds').eq('match_id', matchId);
   if (!markets || markets.length === 0) return false;
+  let settled = false;
   for (const market of markets) {
     if (market.market_result !== 'pending') continue;
+    settled = true;
     const { data: predictions } = await admin.from('predictions').select('id, user_id, selected_option, stake_points, status').eq('market_id', market.id).eq('status', 'pending');
-    if (!predictions || predictions.length === 0) { await admin.from('markets').update({ market_result: 'void' }).eq('id', market.id); continue; }
+    if (!predictions || predictions.length === 0) {
+      await admin.from('markets').update({ market_result: 'void' }).eq('id', market.id);
+      continue;
+    }
     const optionOdds = (market.option_odds ?? {}) as Record<string, string>;
     let anyWon = false;
     for (const pred of predictions) {
@@ -138,34 +213,68 @@ async function settleMatchById(matchId: string, nm: NormalizedMatch, result: Job
       const payout = hit ? calcPayout(pred.stake_points, effMult) : 0;
       await admin.from('predictions').update({ status: hit ? 'won' : 'lost', payout_points: payout }).eq('id', pred.id).eq('status', 'pending');
       result.predictionsUpdatedCount++;
-      if (hit && payout > 0) { anyWon = true; await adjustPoints(pred.user_id, payout, 'settle', '预测命中返还'); result.pointsAwardedCount++; }
+      if (hit && payout > 0) {
+        anyWon = true;
+        await adjustPoints(pred.user_id, payout, 'settle', '\u9884\u6D4B\u547D\u4E2D\u8FD4\u8FD8');
+        result.pointsAwardedCount++;
+      }
     }
     await admin.from('markets').update({ market_result: anyWon ? 'won' : 'lost' }).eq('id', market.id);
   }
-  await admin.from('matches').update({ status: 'settled' }).eq('id', matchId);
-  return true;
+  if (settled) {
+    await admin.from('matches').update({ status: 'settled' }).eq('id', matchId);
+  }
+  return settled;
 }
 
+// --- Main job ---
 export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
-  const result: JobResult = { ok: true, message: '', createdMatchesCount: 0, updatedMatchesCount: 0, settledMatchesCount: 0, lockedCount: 0, predictionsUpdatedCount: 0, pointsAwardedCount: 0, oddsBackfilledCount: 0, errors: [] };
+  const result: JobResult = { ok: true, message: '', createdMatchesCount: 0, updatedMatchesCount: 0, settledMatchesCount: 0, lockedCount: 0, predictionsUpdatedCount: 0, pointsAwardedCount: 0, oddsBackfilledCount: 0, scoreUpdatedCount: 0, errors: [] };
 
+  // Step 1: Fetch lazq data (fixtures + odds)
   const matches = await fetchNormalized();
   if (matches.length === 0) { result.message = 'No match data'; return result; }
   persistNormalized(matches);
 
+  // Step 2: Fetch ESPN scores
+  const espnScores = await fetchEspnScores();
+
   const admin = createAdminClient();
+
+  // Step 3: Process each match from lazq
   for (const nm of matches) {
     try {
-      const { data: existing } = await admin.from('matches').select('id, status').eq('external_provider', nm.externalProvider).eq('external_id', nm.externalId).maybeSingle();
+      const { data: existing } = await admin.from('matches').select('id, status, ft_home_goals, ft_away_goals').eq('external_provider', nm.externalProvider).eq('external_id', nm.externalId).maybeSingle();
+
+      // Check if ESPN has score data for this match
+      const espnKey = `${nm.homeTeam}|${nm.awayTeam}`;
+      const espnScore = espnScores.get(espnKey);
+
       const payload: Record<string, unknown> = {
-        league: '世界杯', stage: nm.stage, home_team: nm.homeTeam, away_team: nm.awayTeam,
-        start_time: nm.startTime, ft_home_goals: nm.homeScore, ft_away_goals: nm.awayScore,
-        ht_home_goals: nm.halfHomeScore, ht_away_goals: nm.halfAwayScore,
+        league: '\u4E16\u754C\u676F', stage: nm.stage, home_team: nm.homeTeam, away_team: nm.awayTeam,
+        start_time: nm.startTime,
         raw_status: String(nm.state), last_synced_at: new Date().toISOString(),
       };
+
+      // Use ESPN scores if available, otherwise use lazq data
+      if (espnScore) {
+        payload.ft_home_goals = espnScore.homeScore;
+        payload.ft_away_goals = espnScore.awayScore;
+        payload.ht_home_goals = espnScore.htHome;
+        payload.ht_away_goals = espnScore.htAway;
+      } else {
+        payload.ft_home_goals = nm.homeScore;
+        payload.ft_away_goals = nm.awayScore;
+        payload.ht_home_goals = nm.halfHomeScore;
+        payload.ht_away_goals = nm.halfAwayScore;
+      }
+
       if (existing) {
+        // Update match data
         await admin.from('matches').update(payload).eq('id', existing.id);
         result.updatedMatchesCount++;
+
+        // Update odds from lazq
         const { data: existingMarkets } = await admin.from('markets').select('id, market_type, option_odds').eq('match_id', existing.id);
         if (existingMarkets) {
           for (const mkt of existingMarkets) {
@@ -176,20 +285,44 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
             }
           }
         }
-        if (nm.state === -1 && existing.status !== 'settled' && nm.homeScore != null && nm.awayScore != null) {
-          if (await settleMatchById(existing.id, nm, result)) result.settledMatchesCount++;
+
+        // Auto-settle: match is finished AND has scores AND not yet settled
+        const isFinished = espnScore ? true : (nm.state === -1);
+        const ftH = espnScore?.homeScore ?? nm.homeScore;
+        const ftA = espnScore?.awayScore ?? nm.awayScore;
+        const htH = espnScore?.htHome ?? nm.halfHomeScore ?? 0;
+        const htA = espnScore?.htAway ?? nm.halfAwayScore ?? 0;
+
+        if (isFinished && existing.status !== 'settled' && ftH != null && ftA != null) {
+          if (await settleMatchById(existing.id, ftH, ftA, htH, htA, result)) {
+            result.settledMatchesCount++;
+          }
         }
       } else {
-        const { data: newMatch, error: insErr } = await admin.from('matches').insert({ external_provider: nm.externalProvider, external_id: nm.externalId, ...payload, status: 'scheduled' }).select('id').single();
+        // New match
+        const { data: newMatch, error: insErr } = await admin.from('matches').insert({
+          external_provider: nm.externalProvider, external_id: nm.externalId, ...payload, status: 'scheduled'
+        }).select('id').single();
         if (insErr || !newMatch) { result.errors.push(`insert ${nm.externalId}: ${insErr?.message ?? 'unknown'}`); continue; }
         result.createdMatchesCount++;
+
         for (const def of MARKET_DEFS) {
           const optOdds = getOptionOddsForMarket(def.market_type, nm.odds);
           const mult = defaultMultiplier(optOdds, MULTIPLIER_DEFAULT[def.market_type] ?? 1.8);
           await admin.from('markets').insert({ match_id: newMatch.id, market_type: def.market_type, title: def.title, options: def.options, multiplier: mult, option_odds: optOdds, is_active: true, market_result: 'pending' });
         }
-        if (nm.state === -1 && nm.homeScore != null && nm.awayScore != null) {
-          if (await settleMatchById(newMatch.id, nm, result)) result.settledMatchesCount++;
+
+        // Auto-settle new match if already finished
+        const isFinished = espnScore ? true : (nm.state === -1);
+        const ftH = espnScore?.homeScore ?? nm.homeScore;
+        const ftA = espnScore?.awayScore ?? nm.awayScore;
+        const htH = espnScore?.htHome ?? nm.halfHomeScore ?? 0;
+        const htA = espnScore?.htAway ?? nm.halfAwayScore ?? 0;
+
+        if (isFinished && ftH != null && ftA != null) {
+          if (await settleMatchById(newMatch.id, ftH, ftA, htH, htA, result)) {
+            result.settledMatchesCount++;
+          }
         }
       }
     } catch (e: unknown) { result.errors.push(`match ${nm.externalId}: ${e instanceof Error ? e.message : String(e)}`); }
@@ -198,7 +331,7 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
   // Delete placeholders and duplicates
   const { data: allDbMatches } = await admin.from('matches').select('id, home_team, away_team, start_time').eq('external_provider', 'lazq');
   if (allDbMatches) {
-    const placeholderIds = allDbMatches.filter(m => /[\[\]胜者败者]/.test(m.home_team) || /[\[\]胜者败者]/.test(m.away_team)).map(m => m.id);
+    const placeholderIds = allDbMatches.filter(m => /[\[\]\u80DC\u8005\u8D25\u8005]/.test(m.home_team) || /[\[\]\u80DC\u8005\u8D25\u8005]/.test(m.away_team)).map(m => m.id);
     if (placeholderIds.length > 0) {
       await admin.from('predictions').delete().in('match_id', placeholderIds);
       await admin.from('markets').delete().in('match_id', placeholderIds);
@@ -211,7 +344,7 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
 
   try { const lr = await autoLockMarkets(); result.lockedCount = lr.lockedCount; } catch (e: unknown) { result.errors.push(`autoLock: ${e instanceof Error ? e.message : String(e)}`); }
 
-  result.message = [`Created: ${result.createdMatchesCount}`, `Updated: ${result.updatedMatchesCount}`, `Odds: ${result.oddsBackfilledCount}`, `Settled: ${result.settledMatchesCount}`, `Locked: ${result.lockedCount}`, `Preds: ${result.predictionsUpdatedCount}`, `Points: ${result.pointsAwardedCount}`, result.errors.length ? `Errors: ${result.errors.length}` : ''].filter(Boolean).join(', ');
+  result.message = [`Created: ${result.createdMatchesCount}`, `Updated: ${result.updatedMatchesCount}`, `Odds: ${result.oddsBackfilledCount}`, `Scores: ${result.scoreUpdatedCount}`, `Settled: ${result.settledMatchesCount}`, `Locked: ${result.lockedCount}`, `Preds: ${result.predictionsUpdatedCount}`, `Points: ${result.pointsAwardedCount}`, result.errors.length ? `Errors: ${result.errors.length}` : ''].filter(Boolean).join(', ');
   if (result.errors.length > 0) result.ok = false;
   return result;
 }
