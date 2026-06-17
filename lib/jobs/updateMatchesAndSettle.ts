@@ -78,12 +78,22 @@ function loadLazqTeams(resp: any): void {
   try {
     const teams = resp?.data?.teams;
     if (!teams) return;
-    const arr: (string | number)[] = Array.isArray(teams) ? teams : [];
-    for (let i = 0; i < arr.length; i += 3) {
-      const cn = String(arr[i + 1]);
-      const en = String(arr[i + 2]);
-      if (en && cn && !en.startsWith('[')) {
-        LAZQ_EN_TO_CN[en] = cn;
+    // teams is array of [id, cn, en] sub-arrays OR flat [id, cn, en, ...]
+    if (Array.isArray(teams) && teams.length > 0) {
+      if (Array.isArray(teams[0])) {
+        // 2D array: [[id, cn, en], ...]
+        for (const entry of teams) {
+          const en = String(entry[2] ?? "");
+          const cn = String(entry[1] ?? "");
+          if (en && cn && !en.startsWith("[")) LAZQ_EN_TO_CN[en] = cn;
+        }
+      } else {
+        // flat array: [id, cn, en, id, cn, en, ...]
+        for (let i = 0; i < teams.length; i += 3) {
+          const cn = String(teams[i + 1] ?? "");
+          const en = String(teams[i + 2] ?? "");
+          if (en && cn && !en.startsWith("[")) LAZQ_EN_TO_CN[en] = cn;
+        }
       }
     }
     console.log(`Loaded ${Object.keys(LAZQ_EN_TO_CN).length} lazq team mappings`);
