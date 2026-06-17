@@ -1,4 +1,4 @@
-// lib/data-providers/lazqNormalize.ts
+﻿// lib/data-providers/lazqNormalize.ts
 // Normalizes raw lazq scraper/API output into the NormalizedMatch format.
 // Only includes World Cup matches (competitionName contains '世界杯').
 // Also extracts per-option odds for all 5 market types.
@@ -212,15 +212,19 @@ export function normalizeFromScraperData(responses: unknown[]): NormalizedMatch[
 
 /** Persist normalized data to file for fallback. */
 export function persistNormalized(matches: NormalizedMatch[]): void {
-  const dir = path.dirname(NORMALIZED_PATH);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(NORMALIZED_PATH, JSON.stringify(matches, null, 2), 'utf-8');
+  try {
+    const dir = path.dirname(NORMALIZED_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(NORMALIZED_PATH, JSON.stringify(matches, null, 2), 'utf-8');
+  } catch {
+    // Serverless environments (Vercel) cannot write to filesystem - skip silently
+  }
 }
 
 /** Load normalized data from file (fallback). */
 export function loadNormalizedFromFile(): NormalizedMatch[] | null {
-  if (!fs.existsSync(NORMALIZED_PATH)) return null;
   try {
+    if (!fs.existsSync(NORMALIZED_PATH)) return null;
     const raw = fs.readFileSync(NORMALIZED_PATH, 'utf-8');
     return JSON.parse(raw) as NormalizedMatch[];
   } catch { return null; }
