@@ -30,7 +30,7 @@ export default function AdminMatchesPage() {
   async function syncAndSettle() {
     setSyncing(true); setSyncMsg(''); setSyncResult(null);
     try {
-      const res = await fetch('/api/admin/jobs/update-matches', { method: 'POST' });
+      const res = await fetch('/api/admin/sync-espn-settle', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) { setSyncMsg(data.error || '同步失败'); } else {
         setSyncResult(data);
@@ -47,16 +47,16 @@ export default function AdminMatchesPage() {
 
         {/* 一键同步+结算 */}
         <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 p-5">
-          <h2 className="mb-2 text-lg font-bold text-gray-900">🔄 数据同步 & 自动结算</h2>
+          <h2 className="mb-2 text-lg font-bold text-gray-900">⚽ 比分拉取 & 自动结算</h2>
           <p className="mb-3 text-sm text-gray-500">
-            从 lazq 数据源拉取最新赛程、比分和参考指数，已完赛的比赛自动结算金币。
+            从 ESPN 拉取已完赛比分，并自动结算金币。赚率由 GitHub Actions 定时同步。
           </p>
           <button
             onClick={syncAndSettle}
             disabled={syncing}
             className="rounded-xl bg-red-500 px-6 py-2.5 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition-colors"
           >
-            {syncing ? '⏳ 同步中...' : '🔄 一键同步 + 结算'}
+            {syncing ? '⏳ 拉取中...' : '⚽ 拉取比分 + 结算'}
           </button>
           {syncMsg && (
             <div className="mt-3 rounded-lg bg-white p-3 text-sm text-gray-700 border border-gray-200">
@@ -66,12 +66,12 @@ export default function AdminMatchesPage() {
           {syncResult && (
             <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div className="rounded-lg bg-white p-2 text-center border">
-                <div className="text-gray-400">新增比赛</div>
-                <div className="text-lg font-bold text-gray-900">{syncResult.createdMatchesCount ?? 0}</div>
+                <div className="text-gray-400">比分更新</div>
+                <div className="text-lg font-bold text-gray-900">{syncResult.scoreUpdated ?? 0}</div>
               </div>
               <div className="rounded-lg bg-white p-2 text-center border">
-                <div className="text-gray-400">更新比赛</div>
-                <div className="text-lg font-bold text-gray-900">{syncResult.updatedMatchesCount ?? 0}</div>
+                <div className="text-gray-400">ESPN比赛</div>
+                <div className="text-lg font-bold text-gray-900">{syncResult.totalEspn ?? 0}</div>
               </div>
               <div className="rounded-lg bg-white p-2 text-center border">
                 <div className="text-gray-400">已结算</div>
