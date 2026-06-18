@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { BetSlipProvider, useBetSlip } from '../../lib/betSlipContext';
 import BetSlip from '../../components/betting/BetSlip';
 import TeamFlag from '../../components/TeamFlag';
+import ReliefButton from '../../components/ReliefButton';
 import { getTeamRank } from '../../lib/rankings';
 import type { MatchItem } from '../../types/match';
 import type { MarketItem } from '../../types/market';
@@ -101,11 +102,13 @@ function MatchesContent() {
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [markets, setMarkets] = useState<Record<string, MarketItem[]>>({});
   const [loading, setLoading] = useState(true);
+  const [userPoints, setUserPoints] = useState<number | null>(null);
   const [tab, setTab] = useState<'upcoming' | 'result'>('upcoming');
   const [multiMode, setMultiMode] = useState(false);
   const { matchCount } = useBetSlip();
 
   useEffect(() => {
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => { if (d?.user?.points !== undefined) setUserPoints(d.user.points); }).catch(() => {});
     fetch('/api/matches')
       .then(r => r.json())
       .then(d => {
@@ -156,6 +159,12 @@ function MatchesContent() {
       {multiMode && (
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700">
           💡 复式模式：同一场比赛可以选择多个结果，系统自动展开为所有组合
+        </div>
+      )}
+
+      {userPoints !== null && (
+        <div className="mb-4">
+          <ReliefButton points={userPoints} onClaimed={(p) => setUserPoints(p)} />
         </div>
       )}
 
@@ -227,3 +236,7 @@ export default function MatchesPage() {
     </BetSlipProvider>
   );
 }
+
+
+
+
