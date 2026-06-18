@@ -1,5 +1,5 @@
 ﻿// lib/constants.ts
-export const APP_NAME = '������Ԥ��';
+export const APP_NAME = '足球金币预测';
 
 export const POINTS_INITIAL = 10000;
 
