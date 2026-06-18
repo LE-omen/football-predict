@@ -30,11 +30,11 @@ export default function AdminMatchesPage() {
   async function syncAndSettle() {
     setSyncing(true); setSyncMsg(''); setSyncResult(null);
     try {
-      const res = await fetch('/api/admin/jobs/update-matches', { method: 'POST' });
+      const res = await fetch('/api/admin/sync-espn-settle', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) { setSyncMsg(data.error || '同步失败'); } else {
         setSyncResult(data);
-        setSyncMsg(data.message || '同步完成');
+        setSyncMsg(data.message || '比分拉取 + 结算完成');
         load();
       }
     } catch { setSyncMsg('网络错误'); } finally { setSyncing(false); }
@@ -45,18 +45,18 @@ export default function AdminMatchesPage() {
       <div className="mx-auto max-w-4xl px-4 py-10">
         <h1 className="mb-6 text-2xl font-black text-gray-900">⚽ 比赛管理</h1>
 
-        {/* 一键同步+结算 */}
+        {/* ESPN 比分拉取 + 结算 */}
         <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 p-5">
-          <h2 className="mb-2 text-lg font-bold text-gray-900">🔄 数据同步 & 自动结算</h2>
+          <h2 className="mb-2 text-lg font-bold text-gray-900">⚽ 比分拉取 & 自动结算</h2>
           <p className="mb-3 text-sm text-gray-500">
-            从 lazq 数据源拉取最新赛程、比分和参考指数，已完赛的比赛自动结算金币。
+            从 ESPN 拉取已完赛比分，并自动结算金币。赔率由 GitHub Actions 定时从 lazq 抓取，管理员按钮不会干涉赔率数据。
           </p>
           <button
             onClick={syncAndSettle}
             disabled={syncing}
             className="rounded-xl bg-red-500 px-6 py-2.5 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition-colors"
           >
-            {syncing ? '⏳ 同步中...' : '🔄 一键同步 + 结算'}
+            {syncing ? '⏳ 拉取中...' : '⚽ 拉取比分 + 结算'}
           </button>
           {syncMsg && (
             <div className="mt-3 rounded-lg bg-white p-3 text-sm text-gray-700 border border-gray-200">
@@ -64,22 +64,18 @@ export default function AdminMatchesPage() {
             </div>
           )}
           {syncResult && (
-            <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
               <div className="rounded-lg bg-white p-2 text-center border">
-                <div className="text-gray-400">新增比赛</div>
-                <div className="text-lg font-bold text-gray-900">{syncResult.createdMatchesCount ?? 0}</div>
+                <div className="text-gray-400">比分更新</div>
+                <div className="text-lg font-bold text-gray-900">{syncResult.scoreUpdated ?? 0}</div>
               </div>
               <div className="rounded-lg bg-white p-2 text-center border">
-                <div className="text-gray-400">更新比赛</div>
-                <div className="text-lg font-bold text-gray-900">{syncResult.updatedMatchesCount ?? 0}</div>
+                <div className="text-gray-400">ESPN比赛</div>
+                <div className="text-lg font-bold text-gray-900">{syncResult.totalEspn ?? 0}</div>
               </div>
               <div className="rounded-lg bg-white p-2 text-center border">
                 <div className="text-gray-400">已结算</div>
-                <div className="text-lg font-bold text-green-600">{syncResult.settledMatchesCount ?? 0}</div>
-              </div>
-              <div className="rounded-lg bg-white p-2 text-center border">
-                <div className="text-gray-400">赔率更新</div>
-                <div className="text-lg font-bold text-blue-600">{syncResult.oddsBackfilledCount ?? 0}</div>
+                <div className="text-lg font-bold text-green-600">{syncResult.settled ?? 0}</div>
               </div>
             </div>
           )}
