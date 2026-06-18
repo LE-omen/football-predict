@@ -148,37 +148,22 @@ interface ScraperData {
 }
 
 function loadScraperData(): ScraperData {
-  return { oddsMap: new Map() };
-}
-
-async function loadOddsFromSupabase(): Promise<Map<string, ExtractedOdds>> {
   const oddsMap = new Map<string, ExtractedOdds>();
+  const rawDir = path.resolve(process.cwd(), 'data/raw/lazq');
+  if (!fs.existsSync(rawDir)) return { oddsMap };
+  const files = fs.readdirSync(rawDir).filter(f => f.endsWith('.json')).sort().reverse();
+  if (files.length === 0) return { oddsMap };
   try {
-    const admin = createAdminClient();
-    // Load ALL odds from Supabase - key by fixture_id (lazq external_id)
-    const { data, error } = await admin
-      .from('external_odds_raw')
-      .select('fixture_id, bet_label, values_json')
-      .eq('bookmaker_name', 'lazq')
-      .eq('bet_key', 'all_markets');
-    if (error || !data) { console.log('Supabase odds load error: ' + (error?.message ?? '')); return oddsMap; }
-    for (const row of data) {
-      const fixtureId = String(row.fixture_id);
-      const odds = row.values_json as Record<string, Record<string, string>>;
-      const extracted: ExtractedOdds = {
-        '1x2': odds['1x2'] ?? {},
-        exact_score: odds['exact_score'] ?? {},
-        total_goals: odds['total_goals'] ?? {},
-        btts: odds['btts'] ?? {},
-        'ht_1x2': odds['ht_1x2'] ?? {},
-      };
-      // Key by fixture_id (external_id) AND by bet_label (team names) for flexible matching
-      oddsMap.set(fixtureId, extracted);
-      if (row.bet_label) oddsMap.set(row.bet_label, extracted);
+    const raw = JSON.parse(fs.readFileSync(path.join(rawDir, files[0]), 'utf-8'));
+    const items = (Array.isArray(raw) ? raw : [raw]).flatMap((r: any) => Array.isArray(r?.data) ? r.data : []);
+    for (const item of items) {
+      if (!item?.homeTeamName || !item?.awayTeamName) continue;
+      const key = item.homeTeamName + '|' + item.awayTeamName;
+      oddsMap.set(key, extractOdds(item));
     }
-    console.log('Loaded ' + oddsMap.size + ' odds entries from Supabase (' + data.length + ' rows)');
-  } catch (e) { console.log('Supabase odds load error: ' + (e instanceof Error ? e.message : String(e))); }
-  return oddsMap;
+    console.log(`Loaded scraper odds for ${oddsMap.size} matches`);
+  } catch (e) { console.log(`Scraper load error: ${e instanceof Error ? e.message : String(e)}`); }
+  return { oddsMap };
 }
 
 async function fetchNormalized(): Promise<NormalizedMatch[]> {
@@ -191,13 +176,13 @@ async function fetchNormalized(): Promise<NormalizedMatch[]> {
   } catch (e) { console.log(`lazq API failed (${e instanceof Error ? e.message : String(e)}), using local file`); apiMatches = loadNormalizedFromFile() ?? []; }
   if (apiMatches.length === 0) return [];
 
-  const oddsMap = await loadOddsFromSupabase();
+  const { oddsMap } = loadScraperData();
 
   return apiMatches.filter(m => !isPlaceholderMatch(m)).map(m => {
     const key = m.homeTeam + '|' + m.awayTeam;
     const sOdds = oddsMap.get(key);
     if (sOdds) {
-      for (const k of ['1x2', 'exact_score', 'total_goals', 'btts', ] as const) {
+      for (const k of ['1x2', 'exact_score', 'total_goals', 'btts', 'ht_1x2'] as const) {
         if (Object.keys(sOdds[k]).length > 0) m.odds[k] = { ...sOdds[k] };
       }
     }
@@ -375,5 +360,4 @@ export async function runUpdateMatchesAndSettle(): Promise<JobResult> {
   if (result.errors.length > 0) result.ok = false;
   return result;
 }
-
 

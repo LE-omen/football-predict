@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { formatDate } from '../lib/utils';
@@ -8,10 +8,10 @@ import type { MatchItem } from '../types/match';
 
 function StatusBadge({ status }: { status: MatchItem['status'] }) {
   const map: Record<MatchItem['status'], { label: string; classes: string }> = {
-    scheduled: { label: '半ɲ半半半', classes: 'bg-red-50 text-red-500 border border-red-100' },
-    locked: { label: '半半半半半半', classes: 'bg-amber-50 text-amber-600 border border-amber-200' },
-    settled: { label: '半ѽ半半半', classes: 'bg-gray-100 text-gray-500 border border-gray-200' },
-    canceled: { label: '半半ȡ半半', classes: 'bg-red-50 text-red-400 border border-red-200' },
+    scheduled: { label: '可参与', classes: 'bg-red-50 text-red-500 border border-red-100' },
+    locked: { label: '已锁定', classes: 'bg-amber-50 text-amber-600 border border-amber-200' },
+    settled: { label: '已结算', classes: 'bg-gray-100 text-gray-500 border border-gray-200' },
+    canceled: { label: '已取消', classes: 'bg-red-50 text-red-400 border border-red-200' },
   };
   const { label, classes } = map[status] ?? { label: status, classes: 'bg-gray-100 text-gray-500 border border-gray-200' };
   return (
@@ -30,7 +30,7 @@ function ScoreDisplay({ match }: { match: MatchItem }) {
         </span>
         {match.ht_home_goals != null && (
           <span className="mt-0.5 text-[10px] text-gray-400">
-            半볡 {match.ht_home_goals} : {match.ht_away_goals}
+            半场 {match.ht_home_goals} : {match.ht_away_goals}
           </span>
         )}
       </div>
@@ -63,7 +63,7 @@ export default function MatchCard({ match }: { match: MatchItem }) {
       className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-red-200 transition-all block p-4"
     >
       <div className="mb-3 flex items-center justify-between text-xs text-gray-400">
-        <span className="font-medium text-gray-500">{match.stage ?? '半半半籭'}</span>
+        <span className="font-medium text-gray-500">{match.stage ?? '世界杯'}</span>
         <span>{formatMatchTime(match.start_time)}</span>
       </div>
       <div className="flex items-center justify-center gap-4">

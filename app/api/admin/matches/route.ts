@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../lib/auth';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { MULTIPLIER_DEFAULT } from '../../../../lib/constants';

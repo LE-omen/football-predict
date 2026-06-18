@@ -1,4 +1,4 @@
-﻿// types/match.ts
+// types/match.ts
 import type { MatchRow, MatchStatus } from './database';
 
 export type MatchItem = Pick<
@@ -12,8 +12,6 @@ export type MatchItem = Pick<
   | 'status'
   | 'ft_home_goals'
   | 'ft_away_goals'
-  | 'ht_home_goals'
-  | 'ht_away_goals'
   | 'ht_home_goals'
   | 'ht_away_goals'
   | 'venue'

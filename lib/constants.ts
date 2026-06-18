@@ -9,8 +9,7 @@ export const STAKE_STEP = 100;
 
 // No per-match limit
 
-export const LOCK_MINUTES_BEFORE_KICKOFF = Number(process.env.MATCH_LOCK_MINUTES ?? 30);
-export const ENABLE_LOCK_WINDOW = String(process.env.ENABLE_LOCK_WINDOW ?? 'true') === 'true';
+export const LOCK_MINUTES_BEFORE_KICKOFF = 30;
 
 export const RELIEF_AMOUNT = 1000;
 export const RELIEF_MAX_PER_DAY = 3;

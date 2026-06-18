@@ -1,6 +1,6 @@
 // lib/data-providers/lazqNormalize.ts
 // Normalizes raw lazq scraper/API output into the NormalizedMatch format.
-// Only includes World Cup matches (competitionName contains '世界杯籭').
+// Only includes World Cup matches (competitionName contains '世界杯').
 // Also extracts per-option odds for all 5 market types.
 
 import * as fs from 'fs';
@@ -28,7 +28,7 @@ const NORMALIZED_PATH = path.resolve(process.cwd(), 'data/normalized/lazq-matche
 /** Determine whether a match belongs to the World Cup. */
 function isWorldCup(obj: Record<string, unknown>): boolean {
   const comp = (obj.competitionName ?? obj.kindName ?? '') as string;
-  return comp.includes('世界杯籭');
+  return comp.includes('世界杯');
 }
 
 /** Convert a lazq unix-timestamp (seconds) to ISO string. */
@@ -76,7 +76,7 @@ function normalizeApiMatch(
   const state = typeof obj.s === 'number' ? obj.s : 0;
   const startTime = toISO(obj.t);
   
-  let stage = '世界杯籭';
+  let stage = '世界杯';
   const kindId = obj.kindId as number | undefined;
   if (kindId && roundMap.has(kindId)) {
     stage = roundMap.get(kindId)!;
@@ -130,7 +130,7 @@ function normalizeScraperMatch(obj: Record<string, unknown>): NormalizedMatch | 
 
   const state = typeof obj.state === 'number' ? obj.state : 0;
   const startTime = toISO(obj.matchTime ?? obj.startTime);
-  const stage = (obj.competitionName as string) ?? '世界杯籭';
+  const stage = (obj.competitionName as string) ?? '世界杯';
 
   const odds = extractOdds(obj);
 
@@ -212,19 +212,15 @@ export function normalizeFromScraperData(responses: unknown[]): NormalizedMatch[
 
 /** Persist normalized data to file for fallback. */
 export function persistNormalized(matches: NormalizedMatch[]): void {
-  try {
-    const dir = path.dirname(NORMALIZED_PATH);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(NORMALIZED_PATH, JSON.stringify(matches, null, 2), 'utf-8');
-  } catch {
-    // Serverless environments (Vercel) cannot write to filesystem - skip silently
-  }
+  const dir = path.dirname(NORMALIZED_PATH);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(NORMALIZED_PATH, JSON.stringify(matches, null, 2), 'utf-8');
 }
 
 /** Load normalized data from file (fallback). */
 export function loadNormalizedFromFile(): NormalizedMatch[] | null {
+  if (!fs.existsSync(NORMALIZED_PATH)) return null;
   try {
-    if (!fs.existsSync(NORMALIZED_PATH)) return null;
     const raw = fs.readFileSync(NORMALIZED_PATH, 'utf-8');
     return JSON.parse(raw) as NormalizedMatch[];
   } catch { return null; }

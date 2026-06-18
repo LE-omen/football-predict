@@ -1,4 +1,4 @@
-﻿// types/database.ts
+// types/database.ts
 
 export type UserRole = 'user' | 'admin';
 export type MatchStatus = 'scheduled' | 'locked' | 'settled' | 'canceled';
@@ -38,7 +38,6 @@ export interface MatchRow {
   ft_away_goals: number | null;
   ht_home_goals: number | null;
   ht_away_goals: number | null;
-
   created_at: string;
   updated_at: string;
   api_football_fixture_id: number | null;

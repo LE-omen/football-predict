@@ -1,5 +1,5 @@
-﻿// lib/data-providers/lazqOddsExtractor.ts
-// �?lazq 原始数据提取每场比赛每种玩法的每个选项赔率
+// lib/data-providers/lazqOddsExtractor.ts
+// 从 lazq 原始数据提取每场比赛每种玩法的每个选项赔率
 
 export interface ExtractedOdds {
   '1x2': Record<string, string>;       // home, draw, away

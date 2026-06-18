@@ -2,7 +2,7 @@
 import { requireUser } from '../../../lib/auth';
 import { createAdminClient } from '../../../lib/supabase/admin';
 import { isValidStake } from '../../../lib/validators';
-import { LOCK_MINUTES_BEFORE_KICKOFF, ENABLE_LOCK_WINDOW } from '../../../lib/constants';
+import { LOCK_MINUTES_BEFORE_KICKOFF } from '../../../lib/constants';
 import { isOptionValidForMarket } from '../../../lib/markets';
 import { adjustPoints } from '../../../lib/points';
 import { minutesBetween } from '../../../lib/utils';
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'missing params' }, { status: 400 });
     }
     if (!isValidStake(stake)) {
-      return NextResponse.json({ error: '投入金币必须为100的整数倍，且在允许范围内' }, { status: 400 });
+      return NextResponse.json({ error: '投入金币不能低于100' }, { status: 400 });
     }
 
     const admin = createAdminClient();
@@ -40,11 +40,9 @@ export async function POST(request: Request) {
     if (!match) return NextResponse.json({ error: 'match not found' }, { status: 404 });
     if (match.status !== 'scheduled') return NextResponse.json({ error: 'match not open' }, { status: 400 });
 
-    if (ENABLE_LOCK_WINDOW) {
-      const mins = minutesBetween(new Date(), new Date(match.start_time));
-      if (mins <= LOCK_MINUTES_BEFORE_KICKOFF) {
-        return NextResponse.json({ error: 'locked ' + LOCK_MINUTES_BEFORE_KICKOFF + 'min before kickoff' }, { status: 400 });
-      }
+    const mins = minutesBetween(new Date(), new Date(match.start_time));
+    if (mins <= LOCK_MINUTES_BEFORE_KICKOFF) {
+      return NextResponse.json({ error: 'locked 30min before kickoff' }, { status: 400 });
     }
 
     const { data: market } = await admin.from('markets').select('*').eq('id', marketId).eq('match_id', resolvedMatchId).eq('is_active', true).single();
@@ -61,19 +59,13 @@ export async function POST(request: Request) {
       user_id: user.id, match_id: resolvedMatchId, market_id: marketId, selected_option: selectedOption, stake_points: stake, status: 'pending', payout_points: 0,
     }).select('*').single();
 
-    if (predErr || !pred) {
-      const msg = String(predErr?.message ?? '').toLowerCase();
-      if (msg.includes('ux_predictions_user_market_option_pending') || msg.includes('duplicate')) {
-        return NextResponse.json({ error: '该选项已预测，不能重复提交' }, { status: 409 });
-      }
-      return NextResponse.json({ error: 'submit failed' }, { status: 500 });
-    }
+    if (predErr || !pred) return NextResponse.json({ error: 'submit failed' }, { status: 500 });
 
     await adjustPoints(user.id, -stake, 'prediction stake', pred.id);
 
     return NextResponse.json({ prediction: pred });
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'service error';
+  } catch (e: any) {
+    const msg = e?.message ?? 'service error';
     const code = msg === 'unauthorized' ? 401 : 500;
     return NextResponse.json({ error: msg }, { status: code });
   }
