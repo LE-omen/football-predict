@@ -1,4 +1,4 @@
-name: Update Matches and Settle
+﻿name: Update Fixtures Only
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  update-matches:
+  update-fixtures:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Sync matches
+      - name: Sync fixtures
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
