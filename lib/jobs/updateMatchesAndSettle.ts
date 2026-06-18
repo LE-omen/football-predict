@@ -155,6 +155,7 @@ async function loadOddsFromSupabase(): Promise<Map<string, ExtractedOdds>> {
   const oddsMap = new Map<string, ExtractedOdds>();
   try {
     const admin = createAdminClient();
+    // Load ALL odds from Supabase - key by fixture_id (lazq external_id)
     const { data, error } = await admin
       .from('external_odds_raw')
       .select('fixture_id, bet_label, values_json')
@@ -162,8 +163,7 @@ async function loadOddsFromSupabase(): Promise<Map<string, ExtractedOdds>> {
       .eq('bet_key', 'all_markets');
     if (error || !data) { console.log('Supabase odds load error: ' + (error?.message ?? '')); return oddsMap; }
     for (const row of data) {
-      const label = row.bet_label as string;
-      if (!label) continue;
+      const fixtureId = String(row.fixture_id);
       const odds = row.values_json as Record<string, Record<string, string>>;
       const extracted: ExtractedOdds = {
         '1x2': odds['1x2'] ?? {},
@@ -172,9 +172,11 @@ async function loadOddsFromSupabase(): Promise<Map<string, ExtractedOdds>> {
         btts: odds['btts'] ?? {},
         'ht_1x2': odds['ht_1x2'] ?? {},
       };
-      oddsMap.set(label, extracted);
+      // Key by fixture_id (external_id) AND by bet_label (team names) for flexible matching
+      oddsMap.set(fixtureId, extracted);
+      if (row.bet_label) oddsMap.set(row.bet_label, extracted);
     }
-    console.log('Loaded ' + oddsMap.size + ' match odds from Supabase');
+    console.log('Loaded ' + oddsMap.size + ' odds entries from Supabase (' + data.length + ' rows)');
   } catch (e) { console.log('Supabase odds load error: ' + (e instanceof Error ? e.message : String(e))); }
   return oddsMap;
 }
